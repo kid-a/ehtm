@@ -1,0 +1,27 @@
+#
+# Makefile
+#
+
+FIND=find
+
+EBIN=../ebin/
+BEAM=erlc -b beam -pa $(EBIN) -o $(EBIN)
+#ERLC=erlc
+
+OBJS=\
+ehtm_app \
+ehtm_sup \
+entry_node
+
+ERL_OBJS=$(foreach file, $(OBJS), $(EBIN)/$(file).beam)
+
+all: $(ERL_OBJS)
+
+$(EBIN)/%.beam: %.erl
+	$(BEAM) $<
+
+clean:
+	@(cd $(EBIN); $(RM) -f *.beam)
+
+clearbak:
+	@$(FIND) . -type f -name \*~ -exec rm {} \;

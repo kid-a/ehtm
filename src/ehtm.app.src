@@ -1,0 +1,12 @@
+{application, ehtm,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { ehtm_app, []}},
+  {env, []}
+ ]}.
