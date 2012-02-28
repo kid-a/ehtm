@@ -10,7 +10,6 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    io:format ("Application started!~n"),
     ehtm_sup:start_link().
 
 stop(_State) ->

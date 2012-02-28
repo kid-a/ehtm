@@ -10,7 +10,8 @@ BEAM=erlc -b beam -pa $(EBIN) -o $(EBIN)
 
 OBJS=\
 ehtm_app \
-ehtm_sup \
+network_sup \
+layer_sup \
 entry_node
 
 ERL_OBJS=$(foreach file, $(OBJS), $(EBIN)/$(file).beam)

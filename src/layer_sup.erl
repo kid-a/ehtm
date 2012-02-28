@@ -1,5 +1,5 @@
 
--module(ehtm_sup).
+-module(layer_sup).
 
 -behaviour(supervisor).
 
@@ -24,6 +24,4 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    MySampleServer = ?CHILD(node, worker),
     {ok, { {one_for_one, 5, 10}, []} }.
-
