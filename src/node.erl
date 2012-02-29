@@ -8,7 +8,8 @@
 	   make_ets_name/1,
 	   get_upper_layer/1,	   
 	   feed/2,
-	   inference/1
+	   inference/1,
+	   read_state/1
 	 ]).
 
 %% -----------------------------------------------------------------------------
@@ -79,3 +80,17 @@ feed (ProcessName, Data) ->
 %% -----------------------------------------------------------------------------
 inference (ProcessName) ->
     gen_server:cast (ProcessName, inference).
+
+
+%% -----------------------------------------------------------------------------
+%% Func: read_state
+%% @doc Read the state of a node.
+%%
+%% Parameters:
+%%   ProcessName :: atom ()
+%%
+%% Reply:
+%%   State :: #node_state () | #output_node_state ()
+%% -----------------------------------------------------------------------------
+read_state (ProcessName) ->
+    gen_server:call (ProcessName, read_state).

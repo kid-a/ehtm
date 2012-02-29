@@ -43,7 +43,6 @@ start_link(ProcessName, Params) ->
 %%               { sigma, float () } ]
 %% -----------------------------------------------------------------------------
 init([Params]) ->
-    io:format ("ciao"),
     NodeName = proplists:get_value (name, Params),
     LayerName = proplists:get_value (layer, Params),
     ProcessName = node:make_process_name (LayerName, NodeName),
@@ -69,13 +68,18 @@ init([Params]) ->
       parent = ParentProcessName,
       data = EtsTableName
      },
-    {ok, [State]}.
+    {ok, State}.
 
 
 %% callbacks
 handle_call(hello, _From, State) ->
     io:format("Hello from server!~n", []),
     {reply, ok, State};
+
+handle_call(read_state, _From, State) ->
+    EtsTableName = State#state.data,
+    Reply = make_snapshot (EtsTableName),
+    {reply, Reply , State};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -282,6 +286,51 @@ compute_density_over_group (Group, Y, PCG) ->
     {GroupName, lists:sum (Densities)}.						 
 
 
+%% -----------------------------------------------------------------------------
+%% Func: make_snapshot
+%% @doc Given the name of the ETS table containing the node's data,
+%% makes a snapshot of the current state and returns it.
+%% 
+%%
+%% Parameters:
+%%   Data :: atom ()
+%%
+%% Reply:
+%%   Snapshot :: #node_state ()
+%% -----------------------------------------------------------------------------
+make_snapshot (Data) ->
+    LambdaMinus = case table_lookup (Data, current_input, undefined) of
+		      undefined -> undefined;
+		      Entry -> Entry#entry_node_input.binary_data
+		  end,
+    LambdaPlus = table_lookup (Data, lambda_plus, undefined),
+    Sigma = table_lookup (Data, sigma, undefined),
+    Coincidences = table_lookup (Data, coincidences, []),
+    CoincidencesOccurrences = table_lookup (Data, coincidences_occurrences, []),
+    Y = table_lookup (Data, y, []),
+    T = table_lookup (Data, t, []),
+    TemporalGroups = table_lookup (Data, temporal_groups, []),
+    PCG = table_lookup (Data, pcg, []),
+    
+    #node_state { lambda_minus = LambdaMinus,
+		  lambda_plus = LambdaPlus,
+		  sigma = Sigma,
+		  coincidences = Coincidences,
+		  coincidences_occurrences = CoincidencesOccurrences,
+		  y = Y,
+		  t = T,
+		  temporal_groups = TemporalGroups,
+		  pcg = PCG
+		}.
+
+table_lookup (TableName, Key, Default) ->
+    case ets:lookup (TableName, Key) of
+	[] -> Default;
+	[{Key, Value}] -> Value
+    end.
+	    
+
+
 %% tests
 norm_test () ->
     I1 = <<1,1,1>>,
@@ -354,5 +403,22 @@ create_entry_node_test () ->
 	       {sigma, 1.0} ],
     
     start_link (ProcessName, Params).
+
+read_state_test () ->
+    Name = "node1",
+    Layer = "0",
+    Parent = "node5",
+    ProcessName = node:make_process_name (Layer, Name),
+    Params = [ {name, Name},
+	       {layer, Layer},
+	       {parent, Parent},
+	       {sigma, 1.0} ],
+    
+    start_link (ProcessName, Params),
+    
+    State = node:read_state (ProcessName),
+    
+    ?assertEqual (State#node_state.sigma, 1.0).
+    
 
 
