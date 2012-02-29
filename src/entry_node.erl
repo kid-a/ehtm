@@ -18,11 +18,24 @@
 
 -define (DEF_SIGMA, 1.0).
 
+%% -----------------------------------------------------------------------------
+%% Func: start_link/0
+%% @doc Starts an entry_node process.
+%% -----------------------------------------------------------------------------
 start_link() ->
     %% !FIXME make process name
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-
+%% -----------------------------------------------------------------------------
+%% Func: init/1
+%% @doc Starts an entry_node process.
+%%
+%% Parameters:
+%%   Params :: [ { name, string () }, 
+%%               { layer, string () }, 
+%%               { parent, string () },
+%%               { sigma, float () } ]
+%% -----------------------------------------------------------------------------
 init(Params) ->
     NodeName = proplists:get_value (name, Params),
     LayerName = proplists:get_value (layer, Params),
@@ -42,8 +55,8 @@ init(Params) ->
     
     %% initialize the process state
     ParentName = proplists:get_value (parent, Params),
-    UpperLayerName = utils:get_upper_layer (LayerName),
-    ParentProcessName = utils:make_process_name (UpperLayerName, ParentName),
+    UpperLayerName = node:get_upper_layer (LayerName),
+    ParentProcessName = node:make_process_name (UpperLayerName, ParentName),
     State = #state {
       name = ProcessName,
       parent = ParentProcessName,
@@ -83,7 +96,16 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+%% -----------------------------------------------------------------------------
 %% ancillary functions
+%% -----------------------------------------------------------------------------
+%% Func: inference
+%% @doc Perfoms an inference steps. Takes as input the name of an ETS table
+%% containing the node state.
+%%
+%% Parameters:
+%%   Data :: atom ()
+%% -----------------------------------------------------------------------------
 inference (Data) ->
     %% read the state
     [{_, Input}] = ets:lookup (Data, current_input),
@@ -101,6 +123,19 @@ inference (Data) ->
     ets:insert (Data, {lambda_plus, LambdaPlus}).
     
 
+%% -----------------------------------------------------------------------------
+%% Func: compute_density_over_coincidences
+%% @doc Compute the density of an input vector over a set of coincidences.
+%%
+%% Parameters:
+%%   S :: [#coincidences ()]
+%%   I :: #entry_node_input ()
+%%   Sigma :: float ()
+%%
+%% Reply:
+%%   Densities :: [ { coincidence_name :: atom (),
+%%                    density :: float () } ]
+%% -----------------------------------------------------------------------------
 compute_density_over_coincidences (S, I, Sigma) ->
     compute_density_over_coincidences ([], S, I, Sigma).
 
@@ -113,6 +148,21 @@ compute_density_over_coincidences (Acc, StoredCoinc, Input, Sigma) ->
     NewAcc = [Distance|Acc],
     compute_density_over_coincidences (NewAcc, Rest, Input, Sigma).
 
+
+%% -----------------------------------------------------------------------------
+%% Func: compute_distance 
+%% @doc Compute the distance between a coincidence and an input vector according
+%% to the following formula: d = exp ( - ||c - i||^2 / sigma^2 )
+%%
+%% Parameters:
+%%   Coincidence :: #coincidence ()
+%%   Input :: #entry_node_input ()
+%%   Sigma :: float ()
+%%
+%% Reply:
+%%   Distance :: [{ coincidence_name :: atom (),
+%%                  value :: float () }]
+%% -----------------------------------------------------------------------------
 compute_distance (Coincidence, Input, Sigma) ->
     InputData = Input#entry_node_input.binary_data,
     ChunkSize = Input#entry_node_input.chunk_size,
@@ -125,6 +175,19 @@ compute_distance (Coincidence, Input, Sigma) ->
     {CoincidenceName, Distance}.
 
 
+%% -----------------------------------------------------------------------------
+%% Func: norm
+%% @doc Compute the Euclidean norm between two binaries, dividing them 
+%% into chunks of Chunk bits each.
+%%
+%% Parameters:
+%%   C1 :: binary ()
+%%   C2 :: binary ()
+%%   ChunkSize :: int ()
+%%
+%% Reply:
+%%   Norm :: float ()
+%% -----------------------------------------------------------------------------
 norm (C1, C2, ChunkSize) ->
     norm ([], C1, C2, ChunkSize).
 
@@ -137,6 +200,23 @@ norm (Acc, C1, C2, ChunkSize) ->
     norm ([ math:pow ( E1 - E2, 2) | Acc ], R1, R2, ChunkSize).
 
     
+%% -----------------------------------------------------------------------------
+%% Func: compute_density_over_groups
+%% @doc Given the vector Y of densities over coincidences, computes the vector
+%% of density over coincidences.
+%% 
+%%
+%% Parameters:
+%%   Y :: [ { coincidence_name :: atom (), y :: float } ]
+%%   PCG :: [ { coincidence_name :: atom (), 
+%%              temporal_group_name :: atom (), 
+%%              probability :: float () } ]
+%%   TemporalGroups = [#temporal_group ()]
+%%
+%% Reply:
+%%   Densities :: [ { temporal_group_name :: atom (), 
+%%                    density :: float () } ]
+%% -----------------------------------------------------------------------------
 compute_density_over_groups (Y, PCG, TemporalGroups) ->
     compute_density_over_groups ([], TemporalGroups, Y, PCG).
 
@@ -149,6 +229,24 @@ compute_density_over_groups (Acc, TemporalGroups, Y, PCG) ->
     NewAcc = [Density|Acc],
     compute_density_over_groups (NewAcc, Rest, Y, PCG).
 
+
+%% -----------------------------------------------------------------------------
+%% Func: compute_density_over_group
+%% @doc Given the vector Y of densities over coincidences and a temporal group,
+%% computes the density of that group.
+%% 
+%%
+%% Parameters:
+%%   Y :: [ { coincidence_name :: atom (), y :: float } ]
+%%   PCG :: [ { coincidence_name :: atom (), 
+%%              temporal_group_name :: atom (), 
+%%              probability :: float () } ]
+%%   Group :: #temporal_group ()
+%%
+%% Reply:
+%%   Density :: { temporal_group_name :: atom (), 
+%%                density :: float () } 
+%% -----------------------------------------------------------------------------
 compute_density_over_group (Group, Y, PCG) ->
     GroupName = Group#temporal_group.name,
     Probabilities = 
