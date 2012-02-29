@@ -10,7 +10,11 @@
 -include_lib("eunit/include/eunit.hrl").
 -include ("node.hrl").
 
--record (state, { table }).
+-record (state, { 
+	   name,
+	   parent,
+	   data
+	  }).
 
 -define (DEF_SIGMA, 1.0).
 
@@ -24,18 +28,26 @@ init(Params) ->
     ProcessName = utils:make_process_name (LayerName, NodeName),
     EtsTableName = utils:make_ets_name (ProcessName),
     
-    %% create the table
-    Table = ets:new (EtsTableName, [set,
-				    named_table,
-				    protected,
-				    {read_concurrency, true}
-				   ]),
+    %% create a table for process data
+    ets:new (EtsTableName, [set,
+			    named_table,
+			    protected, %% other processes can read
+			    {read_concurrency, true}
+			   ]),
 
     %% initialize some parameters
     Sigma = proplists:get_value (sigma, Params, ?DEF_SIGMA),
-    ets:insert (Table, {sigma, Sigma}),   
+    ets:insert (EtsTableName, {sigma, Sigma}),   
     
-    State = #state {table = Table},
+    %% initialize the process state
+    ParentName = proplists:get_value (parent, Params),
+    UpperLayerName = utils:get_upper_layer (LayerName),
+    ParentProcessName = utils:make_process_name (UpperLayerName, ParentName),
+    State = #state {
+      name = ProcessName,
+      parent = ParentProcessName,
+      data = EtsTableName
+     },
     {ok, [State]}.
 
 say_hello() ->
