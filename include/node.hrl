@@ -1,20 +1,15 @@
 %%
 %% node.hrl
 %%
+-record (entry_node_input, {
+	   chunk_size,
+	   binary_data
+	   }).
 
-%% -define (NODE_FIELDS,
-%% 	 [ lambda_minus,
-%% 	   lambda_plus,  
-%% 	   sigma,
-%% 	   coincidences,
-%% 	   coincidences_occurrences,
-%% 	   y,
-%% 	   t,
-%% 	   temporal_groups,
-%% 	   pcg 
-%% 	 ]
-%% 	).
-
+-record (coincidence, {
+	   name,
+	   data
+	  }).
 
 -record (node_state, {
 	   lambda_minus,
@@ -28,21 +23,6 @@
 	   temporal_groups,
 	   pcg
 	  }).
-
-
-%% -define (OUT_NODE_FIELDS,
-%% 	 [ lambda_minus,
-%% 	   outputs,
-%% 	   sigma,
-%% 	   coincidences,
-%% 	   coincidences_occurrences,
-%% 	   y,
-%% 	   t,
-%% 	   prior_probabilities,
-%% 	   pcw
-%% 	 ]
-%% 	).
-
 
 -record (output_node_state, {
 	   lambda_minus,

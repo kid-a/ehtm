@@ -48,3 +48,14 @@ make_ets_name (ProcessName) ->
 %% -----------------------------------------------------------------------------
 feed (ProcessName, Data) ->
     gen_server:cast (ProcessName, {feed, Data}).
+
+
+%% -----------------------------------------------------------------------------
+%% Func: inference
+%% @doc Tells a node process to perform an inference step.
+%%
+%% Parameters:
+%%   ProcessName :: atom ()
+%% -----------------------------------------------------------------------------
+inference (ProcessName) ->
+    gen_server:cast (ProcessName, inference).

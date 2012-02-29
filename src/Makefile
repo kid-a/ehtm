@@ -4,12 +4,20 @@
 
 FIND=find
 INCLUDE=../include
+EUNIT_INCLUDE=$(shell echo /usr/lib/erlang/lib/eunit-*/include)
 
 EBIN=../ebin/
+IMG_EBIN=../../erl_img/ebin
+
 BEAM=erlc -b beam \
 	-pa $(EBIN) \
 	-I $(INCLUDE) \
 	-o $(EBIN)
+
+TEST=erl -pa $(EBIN) -I $(INCLUDE) -I $(EUNIT_INCLUDE) \
+-noshell -run \
+entry_node test
+
 
 #ERLC=erlc
 
@@ -26,6 +34,9 @@ all: $(ERL_OBJS)
 
 $(EBIN)/%.beam: %.erl
 	$(BEAM) $<
+
+test:
+	$(TEST) $<
 
 clean:
 	@(cd $(EBIN); $(RM) -f *.beam)

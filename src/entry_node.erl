@@ -2,13 +2,16 @@
 
 -behaviour(gen_server).
 
--export([start_link/0, say_hello/0]).
+-export([start_link/0]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-export([norm/3]).
+%%-export([norm_test/0]).
+
 -include_lib("eunit/include/eunit.hrl").
-%%-include ("node.hrl").
+-include ("node.hrl").
 
 -record (state, { 
 	   name,
@@ -52,9 +55,6 @@ init(Params) ->
     {ok, [State]}.
 
 
-say_hello() ->
-    gen_server:call(?MODULE, hello).
-
 %% callbacks
 handle_call(hello, _From, State) ->
     io:format("Hello from server!~n", []),
@@ -64,9 +64,14 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast({feed, BinaryData}, State) ->
-    EtsTableName = State#data,
-    ets:insert(EtsTableName, {lambda_minus, BinaryData}),    
+handle_cast({feed, Data}, State) ->
+    EtsTableName = State#state.data,
+    ets:insert(EtsTableName, {current_input, Data}),
+    {noreply, State};
+
+handle_cast(inference, State) ->
+    EtsTableName = State#state.data,
+    inference (EtsTableName),
     {noreply, State};
 
 handle_cast(_Msg, State) ->
@@ -82,4 +87,88 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %% ancillary functions
+inference (Data) ->
+    [{_, Input}] = ets:lookup (Data, current_input),
+    StoredCoincidences = ets:lookup (Data, coincidences),
+    [{_, Sigma}] = ets:lookup (Data, sigma),
+
+    Y = compute_density_over_coincidences (StoredCoincidences, Input, Sigma).
+
+compute_density_over_coincidences (S, I, Sigma) ->
+    compute_density_over_coincidences ([], S, I, Sigma).
+
+compute_density_over_coincidences (Acc, [], _Input, _Sigma) ->
+    lists:reverse (Acc);
+
+compute_density_over_coincidences (Acc, StoredCoinc, Input, Sigma) ->
+    [First|Rest] = StoredCoinc,
+    Distance = compute_distance (First, Input, Sigma),
+    NewAcc = [Distance|Acc],
+    compute_density_over_coincidences (NewAcc, Rest, Input, Sigma).
+
+compute_distance (Coincidence, Input, Sigma) ->
+    InputData = Input#entry_node_input.binary_data,
+    ChunkSize = Input#entry_node_input.chunk_size,
+    CoincidenceName = Coincidence#coincidence.name,
+    CoincidenceData = Coincidence#coincidence.data,
+    
+    Norm = norm (CoincidenceData, InputData, ChunkSize),
+    Distance = math:exp ( - math:pow ( (Norm / Sigma), 2 )),
+    
+    {CoincidenceName, Distance}.
+
+
+norm (C1, C2, ChunkSize) ->
+    norm ([], C1, C2, ChunkSize).
+
+norm (Acc, <<>>, <<>>, _) ->
+    math:sqrt (lists:sum (Acc));
+
+norm (Acc, C1, C2, ChunkSize) ->
+    <<E1:ChunkSize, R1/binary >> = C1,
+    <<E2:ChunkSize, R2/binary >> = C2,
+    norm ([ math:pow ( E1 - E2, 2) | Acc ], R1, R2, ChunkSize).
+
+    
+compute_density_over_groups () ->
+    ok.
+
+
+    
+
+%% tests
+norm_test () ->
+    I1 = <<1,1,1>>,
+    I2 = <<2,2,2>>,
+    ChunkSize = 8,
+    
+    ?assertEqual ( norm(I1, I1, ChunkSize), 0.0 ),
+    ?assertEqual ( norm(I1, I2, ChunkSize), math:sqrt(3) ).
+
+
+compute_distance_test () ->
+    Coincidence = #coincidence {
+      name = c1, 
+      data = <<1,1,1>>
+     },
+    Input = #entry_node_input {
+      chunk_size = 8,
+      binary_data = <<2,2,2>>
+     },
+    Sigma = 1.0,
+    Result = compute_distance (Coincidence, Input, Sigma),
+
+    ?assertEqual ({c1, math:exp (- math:pow (math:sqrt(3), 2))}, Result).
+
+compute_density_over_coincidences_test () ->
+    Coincidences = [#coincidence {name = c1, data = <<1,1,1>>},
+		    #coincidence {name = c2, data = <<2,2,2>>}],
+    Input = #entry_node_input {chunk_size = 8, binary_data = <<1,1,1>>},
+    Sigma = 1.0,
+    Result = compute_density_over_coincidences (Coincidences, Input,Sigma),
+    
+    ?assertEqual ([{c1, 1.0},
+		   {c2, math:exp (- math:pow (math:sqrt(3), 2))}],
+		  Result).
+    
 
