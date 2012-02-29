@@ -5,7 +5,11 @@
 -module (node).
 
 -export ([ make_process_name/2,
-	   feed/2 ]).
+	   make_ets_name/1,
+	   get_upper_layer/1,	   
+	   feed/2,
+	   inference/1
+	 ]).
 
 %% -----------------------------------------------------------------------------
 %% Func: make_process_name/2
@@ -36,6 +40,22 @@ make_process_name (LayerName, NodeName) ->
 %% -----------------------------------------------------------------------------
 make_ets_name (ProcessName) ->
     atom_to_list ( lists:concat ([ list_to_atom (ProcessName), ".state" ])).
+
+
+%% -----------------------------------------------------------------------------
+%% Func: get_upper_layer
+%% @doc Given a layer name, returns the name of the layer immediately
+%% higher level in the network hierarchy.
+%%
+%% Parameters:
+%%   LayerName :: string ()
+%%   NodeName :: string ()
+%%
+%% Reply:
+%%   ProcessName :: atom()
+%% -----------------------------------------------------------------------------
+get_upper_layer (LayerName) -> 
+    integer_to_list (list_to_integer (LayerName) + 1).
 
 
 %% -----------------------------------------------------------------------------
