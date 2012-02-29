@@ -17,7 +17,8 @@ OBJS=\
 ehtm_app \
 network_sup \
 layer_sup \
-entry_node
+entry_node \
+utils
 
 ERL_OBJS=$(foreach file, $(OBJS), $(EBIN)/$(file).beam)
 
