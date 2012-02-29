@@ -11,6 +11,11 @@
 	   data
 	  }).
 
+-record (temporal_group, {
+	   name,
+	   coincidences
+	  }).
+
 
 -record (node_state, {
 	   lambda_minus,

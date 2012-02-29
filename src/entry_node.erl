@@ -89,11 +89,12 @@ inference (Data) ->
     [{_, Input}] = ets:lookup (Data, current_input),
     [{_, Coincidences}] = ets:lookup (Data, coincidences),
     [{_, Sigma}] = ets:lookup (Data, sigma),
+    [{_, TemporalGroups}] = ets:lookup (Data, temporal_groups),
     [{_, PCG}] = ets:lookup (Data, pcg),
 
     %% perform inference
     Y = compute_density_over_coincidences (Coincidences, Input, Sigma),
-    LambdaPlus = compute_density_over_groups (Y, PCG),
+    LambdaPlus = compute_density_over_groups (Y, PCG, TemporalGroups),
 
     %% update the state
     ets:insert (Data, {y, Y}),
@@ -136,14 +137,41 @@ norm (Acc, C1, C2, ChunkSize) ->
     norm ([ math:pow ( E1 - E2, 2) | Acc ], R1, R2, ChunkSize).
 
     
-compute_density_over_groups () ->
-    ok.
+compute_density_over_groups (Y, PCG, TemporalGroups) ->
+    compute_density_over_groups ([], TemporalGroups, Y, PCG).
 
-    %% def compute_density_over_groups (self):
-    %%     self._lambda_plus = dot( array (self._y), self._PCG)
+compute_density_over_groups (Acc, [], Y, PCG) ->
+    lists:reverse (Acc);
 
+compute_density_over_groups (Acc, TemporalGroups, Y, PCG) ->
+    [First|Rest] = TemporalGroups,
+    Density = compute_density_over_group (First, Y, PCG),
+    NewAcc = [Density|Acc],
+    compute_density_over_groups (NewAcc, Rest, Y, PCG).
 
-    
+compute_density_over_group (Group, Y, PCG) ->
+    GroupName = Group#temporal_group.name,
+    Probabilities = 
+	lists:foldl (fun (Entry, Acc) ->
+			     case Entry of
+				 {CoincName, GroupName, Value} ->
+				     [{CoincName, Value}|Acc];
+				 _ -> Acc
+			     end
+		     end,
+		     [],
+		     PCG),
+    Densities = 
+	lists:foldl (fun ({CoincName, Yi}, Acc) ->
+			     Prob = 
+				 proplists:get_value (CoincName, Probabilities),
+			     [Yi * Prob | Acc]
+		     end,
+		     [],
+		     Y),
+
+    {GroupName, lists:sum (Densities)}.						 
+
 
 %% tests
 norm_test () ->
