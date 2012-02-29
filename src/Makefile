@@ -15,8 +15,9 @@ BEAM=erlc -b beam \
 	-o $(EBIN)
 
 TEST=erl -pa $(EBIN) -I $(INCLUDE) -I $(EUNIT_INCLUDE) \
--noshell -run \
-entry_node test
+-noshell \
+-run entry_node test \
+-run init stop
 
 
 #ERLC=erlc
@@ -35,7 +36,7 @@ all: $(ERL_OBJS)
 $(EBIN)/%.beam: %.erl
 	$(BEAM) $<
 
-test:
+test: 
 	$(TEST) $<
 
 clean:

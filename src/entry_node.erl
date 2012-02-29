@@ -163,8 +163,12 @@ compute_density_over_group (Group, Y, PCG) ->
 		     PCG),
     Densities = 
 	lists:foldl (fun ({CoincName, Yi}, Acc) ->
+			     %% if no probability is found, suppose
+			     %% it is zero
 			     Prob = 
-				 proplists:get_value (CoincName, Probabilities),
+				 proplists:get_value (CoincName, 
+						      Probabilities, 
+						      0.0),
 			     [Yi * Prob | Acc]
 		     end,
 		     [],
@@ -207,5 +211,18 @@ compute_density_over_coincidences_test () ->
     ?assertEqual ([{c1, 1.0},
 		   {c2, math:exp (- math:pow (math:sqrt(3), 2))}],
 		  Result).
+
+compute_density_over_group_test () ->
+    Group1 = #temporal_group {name = g1, coincidences = [c1,c2]},
+    Group2 = #temporal_group {name = g2, coincidences = [c1]},
+    Y = [{c1, 0.5}, {c2, 1}],
+    PCG = [{c1, g1, 0.4},
+	   {c1, g2, 1.0},
+	   {c2, g1, 0.6}],
+    Result1 = compute_density_over_group (Group1, Y, PCG),
+    Result2 = compute_density_over_group (Group2, Y, PCG),
     
+    ?assertEqual ({g1, 0.5 * 0.4 + 0.6}, Result1),
+    ?assertEqual ({g2, 0.5}, Result2).
+
 
