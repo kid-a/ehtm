@@ -9,7 +9,8 @@
 	   get_upper_layer/1,	   
 	   feed/2,
 	   inference/1,
-	   read_state/1
+	   read_state/1,
+	   set_state/2
 	 ]).
 
 %% -----------------------------------------------------------------------------
@@ -90,7 +91,22 @@ inference (ProcessName) ->
 %%   ProcessName :: atom ()
 %%
 %% Reply:
-%%   State :: #node_state () | #output_node_state ()
+%%   State :: #entry_node_state () | #node_state () | #output_node_state ()
 %% -----------------------------------------------------------------------------
 read_state (ProcessName) ->
     gen_server:call (ProcessName, read_state).
+
+%% -----------------------------------------------------------------------------
+%% Func: set_state
+%% @doc Set the state of a node.
+%%
+%% Parameters:
+%%   ProcessName :: atom ()
+%%
+%% Reply:
+%%   State :: #entry_node_state () | #node_state () | #output_node_state ()
+%% -----------------------------------------------------------------------------
+set_state (ProcessName, State) ->
+    gen_server:cast (ProcessName, {set_state, State}).
+
+

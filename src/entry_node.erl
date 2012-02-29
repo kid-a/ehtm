@@ -76,23 +76,28 @@ handle_call(hello, _From, State) ->
     io:format("Hello from server!~n", []),
     {reply, ok, State};
 
-handle_call(read_state, _From, State) ->
+handle_call (read_state, _From, State) ->
     EtsTableName = State#state.data,
     Reply = make_snapshot (EtsTableName),
     {reply, Reply , State};
 
-handle_call(_Request, _From, State) ->
+handle_call (_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast({feed, Data}, State) ->
+handle_cast ({feed, Data}, State) ->
     EtsTableName = State#state.data,
     ets:insert(EtsTableName, {current_input, Data}),
     {noreply, State};
 
-handle_cast(inference, State) ->
+handle_cast (inference, State) ->
     EtsTableName = State#state.data,
     inference (EtsTableName),
+    {noreply, State};
+
+handle_cast ({set_state, S}, State) ->
+    EtsTableName = State#state.data,
+    set_state (EtsTableName, S),
     {noreply, State};
 
 handle_cast(_Msg, State) ->
@@ -130,8 +135,8 @@ inference (Data) ->
     LambdaPlus = compute_density_over_groups (Y, PCG, TemporalGroups),
 
     %% update the state
-    ets:insert (Data, {y, Y}),
-    ets:insert (Data, {lambda_plus, LambdaPlus}).
+    ets:insert (Data, [{y, Y}, 
+		       {lambda_plus, LambdaPlus}]).
     
 
 %% -----------------------------------------------------------------------------
@@ -328,9 +333,32 @@ table_lookup (TableName, Key, Default) ->
 	[] -> Default;
 	[{Key, Value}] -> Value
     end.
-	    
 
 
+set_state (Data, State) ->
+    LambdaMinus = State#entry_node_state.lambda_minus,
+    LambdaPlus = State#entry_node_state.lambda_plus,
+    Sigma = State#entry_node_state.sigma,
+    Coincidences = State#entry_node_state.coincidences,
+    CoincidencesOccurrences = State#entry_node_state.coincidences_occurrences,
+    Y = State#entry_node_state.y,
+    T = State#entry_node_state.t,
+    TemporalGroups = State#entry_node_state.temporal_groups,
+    PCG = State#entry_node_state.pcg,
+    
+    ets:insert (Data, [{lambda_minus, #entry_node_input { 
+			  chunk_size = undefined,
+			  binary_data = LambdaMinus
+			 }},
+		       {lambda_plus, LambdaPlus},
+		       {sigma, Sigma},
+		       {coincidences, Coincidences},
+		       {coincidences_occurrences, CoincidencesOccurrences},
+		       {y, Y},
+		       {t, T},
+		       {temporal_groups, TemporalGroups},
+		       {pcg, PCG}]).
+		   
 %% tests
 norm_test () ->
     I1 = <<1,1,1>>,
@@ -418,4 +446,40 @@ read_state_test () ->
     
     State = node:read_state (ProcessName),
     
-    ?assertEqual (State#entry_node_state.sigma, 1.0).
+    ?assertEqual (State#entry_node_state.sigma, 1.0),
+    ?assertEqual (State#entry_node_state.lambda_minus, undefined).
+
+
+feed_test () ->
+    Name = "node1",
+    Layer = "0",
+    BinaryData = <<1,1,1>>,
+    ProcessName = node:make_process_name (Layer, Name),
+    node:feed (ProcessName, 
+	       #entry_node_input
+	       {
+		 chunk_size = 8,
+		 binary_data = BinaryData
+	       }),
+    State = node:read_state (ProcessName),
+    
+    ?assertEqual (State#entry_node_state.lambda_minus,
+		  BinaryData).
+
+
+set_state_test () ->
+    Name = "node1",
+    Layer = "0",
+    BinaryData = <<1,1,1>>,
+    ProcessName = node:make_process_name (Layer, Name),
+    node:set_state (ProcessName, 
+		    #entry_node_state { lambda_minus = BinaryData }),
+    
+    State = node:read_state (ProcessName),
+    
+    ?assertEqual (State#entry_node_state.lambda_minus,
+    		  BinaryData).
+
+%% !FIXME maybe everything should be a call and not a cast
+%% otherways some tests could fail
+%% an inference test here
