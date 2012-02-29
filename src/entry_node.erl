@@ -2,7 +2,7 @@
 
 -behaviour(gen_server).
 
--export([start_link/0]).
+-export([start_link/2]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
@@ -21,10 +21,16 @@
 %% -----------------------------------------------------------------------------
 %% Func: start_link/0
 %% @doc Starts an entry_node process.
+%%
+%% Parameters: 
+%%  ProcessName :: atom ()
+%%  Params :: [ { name, string () }, 
+%%              { layer, string () }, 
+%%              { parent, string () },
+%%              { sigma, float () } ]
 %% -----------------------------------------------------------------------------
-start_link() ->
-    %% !FIXME make process name
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(ProcessName, Params) ->
+    gen_server:start_link({local, ProcessName}, ?MODULE, [Params], []).
 
 %% -----------------------------------------------------------------------------
 %% Func: init/1
@@ -36,7 +42,8 @@ start_link() ->
 %%               { parent, string () },
 %%               { sigma, float () } ]
 %% -----------------------------------------------------------------------------
-init(Params) ->
+init([Params]) ->
+    io:format ("ciao"),
     NodeName = proplists:get_value (name, Params),
     LayerName = proplists:get_value (layer, Params),
     ProcessName = node:make_process_name (LayerName, NodeName),
@@ -48,7 +55,7 @@ init(Params) ->
 			    protected, %% other processes can read
 			    {read_concurrency, true}
 			   ]),
-
+    
     %% initialize some parameters
     Sigma = proplists:get_value (sigma, Params, ?DEF_SIGMA),
     ets:insert (EtsTableName, {sigma, Sigma}),   
@@ -220,7 +227,7 @@ norm (Acc, C1, C2, ChunkSize) ->
 compute_density_over_groups (Y, PCG, TemporalGroups) ->
     compute_density_over_groups ([], TemporalGroups, Y, PCG).
 
-compute_density_over_groups (Acc, [], Y, PCG) ->
+compute_density_over_groups (Acc, [], _Y, _PCG) ->
     lists:reverse (Acc);
 
 compute_density_over_groups (Acc, TemporalGroups, Y, PCG) ->
@@ -325,8 +332,8 @@ compute_density_over_group_test () ->
 
 compute_density_over_groups_test () ->
     TemporalGroups =
-	[Group1 = #temporal_group {name = g1, coincidences = [c1,c2]},
-	 Group2 = #temporal_group {name = g2, coincidences = [c1]}],
+	[#temporal_group {name = g1, coincidences = [c1,c2]},
+	 #temporal_group {name = g2, coincidences = [c1]}],
     Y = [{c1, 0.5}, {c2, 1}],
     PCG = [{c1, g1, 0.4},
 	   {c1, g2, 1.0},
@@ -335,3 +342,17 @@ compute_density_over_groups_test () ->
     Result = compute_density_over_groups (Y, PCG, TemporalGroups),
     
     ?assertEqual ([{g1, 0.5 * 0.4 + 0.6}, {g2, 0.5}], Result).
+
+create_entry_node_test () ->
+    Name = "node1",
+    Layer = "0",
+    Parent = "node5",
+    ProcessName = node:make_process_name (Layer, Name),
+    Params = [ {name, Name},
+	       {layer, Layer},
+	       {parent, Parent},
+	       {sigma, 1.0} ],
+    
+    start_link (ProcessName, Params).
+
+

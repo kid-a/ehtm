@@ -39,7 +39,7 @@ make_process_name (LayerName, NodeName) ->
 %%   TableName :: atom ()
 %% -----------------------------------------------------------------------------
 make_ets_name (ProcessName) ->
-    atom_to_list ( lists:concat ([ list_to_atom (ProcessName), ".state" ])).
+    list_to_atom ( lists:concat ([ atom_to_list (ProcessName), ".state" ])).
 
 
 %% -----------------------------------------------------------------------------
@@ -55,7 +55,7 @@ make_ets_name (ProcessName) ->
 %%   ProcessName :: atom()
 %% -----------------------------------------------------------------------------
 get_upper_layer (LayerName) -> 
-    integer_to_list (list_to_integer (LayerName) + 1).
+    erlang:integer_to_list (erlang:list_to_integer (LayerName) + 1).
 
 
 %% -----------------------------------------------------------------------------
