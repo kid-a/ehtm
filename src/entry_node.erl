@@ -98,7 +98,7 @@ inference (Data) ->
 
     %% update the state
     ets:insert (Data, {y, Y}),
-    ets:insert (Data, {lambda_plus, LambdaPlus}).    
+    ets:insert (Data, {lambda_plus, LambdaPlus}).
     
 
 compute_density_over_coincidences (S, I, Sigma) ->
