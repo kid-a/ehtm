@@ -11,6 +11,7 @@
 	   data
 	  }).
 
+
 -record (node_state, {
 	   lambda_minus,
 	   lambda_plus,
@@ -35,4 +36,3 @@
 	   prior_probabilities,
 	   pcw
 	   }).
-	 

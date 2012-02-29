@@ -7,9 +7,6 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--export([norm/3]).
-%%-export([norm_test/0]).
-
 -include_lib("eunit/include/eunit.hrl").
 -include ("node.hrl").
 
@@ -88,11 +85,20 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% ancillary functions
 inference (Data) ->
+    %% read the state
     [{_, Input}] = ets:lookup (Data, current_input),
-    StoredCoincidences = ets:lookup (Data, coincidences),
+    [{_, Coincidences}] = ets:lookup (Data, coincidences),
     [{_, Sigma}] = ets:lookup (Data, sigma),
+    [{_, PCG}] = ets:lookup (Data, pcg),
 
-    Y = compute_density_over_coincidences (StoredCoincidences, Input, Sigma).
+    %% perform inference
+    Y = compute_density_over_coincidences (Coincidences, Input, Sigma),
+    LambdaPlus = compute_density_over_groups (Y, PCG),
+
+    %% update the state
+    ets:insert (Data, {y, Y}),
+    ets:insert (Data, {lambda_plus, LambdaPlus}).    
+    
 
 compute_density_over_coincidences (S, I, Sigma) ->
     compute_density_over_coincidences ([], S, I, Sigma).
@@ -132,6 +138,9 @@ norm (Acc, C1, C2, ChunkSize) ->
     
 compute_density_over_groups () ->
     ok.
+
+    %% def compute_density_over_groups (self):
+    %%     self._lambda_plus = dot( array (self._y), self._PCG)
 
 
     
