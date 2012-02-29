@@ -8,7 +8,7 @@
          terminate/2, code_change/3]).
 
 -include_lib("eunit/include/eunit.hrl").
--include ("node.hrl").
+%%-include ("node.hrl").
 
 -record (state, { 
 	   name,
@@ -22,11 +22,12 @@ start_link() ->
     %% !FIXME make process name
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
+
 init(Params) ->
     NodeName = proplists:get_value (name, Params),
     LayerName = proplists:get_value (layer, Params),
-    ProcessName = utils:make_process_name (LayerName, NodeName),
-    EtsTableName = utils:make_ets_name (ProcessName),
+    ProcessName = node:make_process_name (LayerName, NodeName),
+    EtsTableName = node:make_ets_name (ProcessName),
     
     %% create a table for process data
     ets:new (EtsTableName, [set,
@@ -50,6 +51,7 @@ init(Params) ->
      },
     {ok, [State]}.
 
+
 say_hello() ->
     gen_server:call(?MODULE, hello).
 
@@ -61,6 +63,11 @@ handle_call(hello, _From, State) ->
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
+
+handle_cast({feed, BinaryData}, State) ->
+    EtsTableName = State#data,
+    ets:insert(EtsTableName, {lambda_minus, BinaryData}),    
+    {noreply, State};
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
