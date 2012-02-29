@@ -296,7 +296,7 @@ compute_density_over_group (Group, Y, PCG) ->
 %%   Data :: atom ()
 %%
 %% Reply:
-%%   Snapshot :: #node_state ()
+%%   Snapshot :: #entry_node_state ()
 %% -----------------------------------------------------------------------------
 make_snapshot (Data) ->
     LambdaMinus = case table_lookup (Data, current_input, undefined) of
@@ -312,16 +312,16 @@ make_snapshot (Data) ->
     TemporalGroups = table_lookup (Data, temporal_groups, []),
     PCG = table_lookup (Data, pcg, []),
     
-    #node_state { lambda_minus = LambdaMinus,
-		  lambda_plus = LambdaPlus,
-		  sigma = Sigma,
-		  coincidences = Coincidences,
-		  coincidences_occurrences = CoincidencesOccurrences,
-		  y = Y,
-		  t = T,
-		  temporal_groups = TemporalGroups,
-		  pcg = PCG
-		}.
+    #entry_node_state { lambda_minus = LambdaMinus,
+			lambda_plus = LambdaPlus,
+			sigma = Sigma,
+			coincidences = Coincidences,
+			coincidences_occurrences = CoincidencesOccurrences,
+			y = Y,
+			t = T,
+			temporal_groups = TemporalGroups,
+			pcg = PCG
+		      }.
 
 table_lookup (TableName, Key, Default) ->
     case ets:lookup (TableName, Key) of
@@ -418,7 +418,4 @@ read_state_test () ->
     
     State = node:read_state (ProcessName),
     
-    ?assertEqual (State#node_state.sigma, 1.0).
-    
-
-
+    ?assertEqual (State#entry_node_state.sigma, 1.0).

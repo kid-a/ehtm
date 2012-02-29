@@ -35,36 +35,49 @@
 	  }).
 
 %%
-%% node_state { lambda_minus :: [ { origin :: atom (), 
-%%                                  lambda :: float () } ] 
-%%                            | binary ()
+%% entry_node_state { lambda_minus :: [ { origin :: atom (), 
+%%                                        lambda :: float () } ] 
+%%                                  | binary ()
 %%
-%%              lambda_plus :: [ { temporal_group_name :: atom (), 
-%%                                 density :: float () } ]
+%%                    lambda_plus :: [ { temporal_group_name :: atom (), 
+%%                                       density :: float () } ]
 %%
-%%              sigma :: float ()
-%5
-%%              coincidences :: #coincidence ()
+%%                    sigma :: float ()
 %%
-%%              coincidences_occurrences :: [ { coincidence_name :: atom (), 
-%%                                              occurrences :: int() } ]
+%%                    coincidences :: #coincidence ()
 %%
-%%              y :: [ { coincidence_name :: atom (), 
-%%                       density:: float ()]
+%%                    coincidences_occurrences :: [ { coincidence_name :: atom (), 
+%%                                                    occurrences :: int() } ]
 %%
-%%              t :: ??
+%%                    y :: [ { coincidence_name :: atom (), 
+%%                             density:: float ()]
 %%
-%%              temporal_groups :: #temporal_group ()
+%%                    t :: ??
 %%
-%%              pcg :: [ { group_name :: atom (), 
-%%                         coincidence_name :: atom (), 
-%%                         probability :: float () } ]
-%%            }
--record (node_state, {
+%%                    temporal_groups :: #temporal_group ()
+%%
+%%                    pcg :: [ { group_name :: atom (), 
+%%                               coincidence_name :: atom (), 
+%%                               probability :: float () } ]
+%%                  }
+-record (entry_node_state, {
 	   lambda_minus,
 	   lambda_plus,
 	   
 	   sigma,
+	   coincidences,
+	   coincidences_occurrences,
+	   y,
+	   t,
+	   temporal_groups,
+	   pcg
+	  }).
+
+
+-record (node_state, {
+	   lambda_minus,
+	   lambda_plus,
+	   
 	   coincidences,
 	   coincidences_occurrences,
 	   y,
