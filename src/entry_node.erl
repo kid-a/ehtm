@@ -225,4 +225,15 @@ compute_density_over_group_test () ->
     ?assertEqual ({g1, 0.5 * 0.4 + 0.6}, Result1),
     ?assertEqual ({g2, 0.5}, Result2).
 
-
+compute_density_over_groups_test () ->
+    TemporalGroups =
+	[Group1 = #temporal_group {name = g1, coincidences = [c1,c2]},
+	 Group2 = #temporal_group {name = g2, coincidences = [c1]}],
+    Y = [{c1, 0.5}, {c2, 1}],
+    PCG = [{c1, g1, 0.4},
+	   {c1, g2, 1.0},
+	   {c2, g1, 0.6}],
+    
+    Result = compute_density_over_groups (Y, PCG, TemporalGroups),
+    
+    ?assertEqual ([{g1, 0.5 * 0.4 + 0.6}, {g2, 0.5}], Result).
