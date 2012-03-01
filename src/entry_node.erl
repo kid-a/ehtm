@@ -72,10 +72,6 @@ init([Params]) ->
 
 
 %% callbacks
-handle_call(hello, _From, State) ->
-    io:format("Hello from server!~n", []),
-    {reply, ok, State};
-
 handle_call (read_state, _From, State) ->
     EtsTableName = State#state.data,
     Reply = make_snapshot (EtsTableName),

@@ -65,10 +65,6 @@ init([Params]) ->
 
 
 %% callbacks
-handle_call(hello, _From, State) ->
-    io:format("Hello from server!~n", []),
-    {reply, ok, State};
-
 handle_call (read_state, _From, State) ->
     EtsTableName = State#state.data,
     Reply = make_snapshot (EtsTableName),
@@ -119,12 +115,11 @@ inference (Data) ->
     %% read the state
     [{_, Input}] = ets:lookup (Data, current_input),
     [{_, Coincidences}] = ets:lookup (Data, coincidences),
-    [{_, Sigma}] = ets:lookup (Data, sigma),
     [{_, TemporalGroups}] = ets:lookup (Data, temporal_groups),
     [{_, PCG}] = ets:lookup (Data, pcg),
 
     %% perform inference
-    Y = compute_density_over_coincidences (Coincidences, Input, Sigma),
+    Y = compute_density_over_coincidences (Coincidences, Input),
     LambdaPlus = compute_density_over_groups (Y, PCG, TemporalGroups),
 
     %% update the state
@@ -138,75 +133,56 @@ inference (Data) ->
 %%
 %% Parameters:
 %%   S :: [#coincidences ()]
-%%   I :: #entry_node_input ()
-%%   Sigma :: float ()
+%%   I :: [ {child :: atom (), {temporal_group_name :: atom (),
+%%                              density :: float () } ]
 %%
 %% Reply:
 %%   Densities :: [ { coincidence_name :: atom (),
 %%                    density :: float () } ]
 %% -----------------------------------------------------------------------------
-compute_density_over_coincidences (S, I, Sigma) ->
-    compute_density_over_coincidences ([], S, I, Sigma).
+compute_density_over_coincidences (S, I) ->
+    compute_density_over_coincidences ([], S, I).
 
-compute_density_over_coincidences (Acc, [], _Input, _Sigma) ->
+compute_density_over_coincidences (Acc, [], _Input) ->
     lists:reverse (Acc);
 
-compute_density_over_coincidences (Acc, StoredCoinc, Input, Sigma) ->
+compute_density_over_coincidences (Acc, StoredCoinc, Input) ->
     [First|Rest] = StoredCoinc,
-    Distance = compute_distance (First, Input, Sigma),
+    Distance = compute_density_over_coincidence (First, Input),
     NewAcc = [Distance|Acc],
-    compute_density_over_coincidences (NewAcc, Rest, Input, Sigma).
+    compute_density_over_coincidences (NewAcc, Rest, Input).
 
 
 %% -----------------------------------------------------------------------------
-%% Func: compute_distance 
-%% @doc Compute the distance between a coincidence and an input vector according
-%% to the following formula: d = exp ( - ||c - i||^2 / sigma^2 )
+%% Func: compute_density_over_coincidence
+%% @doc Compute the density of an input vector over a given coincidence.
 %%
 %% Parameters:
 %%   Coincidence :: #coincidence ()
-%%   Input :: #entry_node_input ()
-%%   Sigma :: float ()
+%%   Input :: [ {child :: atom (), { temporal_group_name :: atom (),
+%%                                   density :: float () } ]
 %%
 %% Reply:
-%%   Distance :: [{ coincidence_name :: atom (),
-%%                  value :: float () }]
+%%   Density :: [{ coincidence_name :: atom (),
+%%                 value :: float () }]
 %% -----------------------------------------------------------------------------
-compute_distance (Coincidence, Input, Sigma) ->
-    InputData = Input#entry_node_input.binary_data,
-    ChunkSize = Input#entry_node_input.chunk_size,
+compute_density_over_coincidence (Coincidence, Input) ->
     CoincidenceName = Coincidence#coincidence.name,
     CoincidenceData = Coincidence#coincidence.data,
     
-    Norm = norm (CoincidenceData, InputData, ChunkSize),
-    Distance = math:exp ( - math:pow ( (Norm / Sigma), 2 )),
+    GroupsActivationValues =
+	lists:foldl (fun ({ChildName, Group}, Acc) ->
+			     Message = proplists:get_value (ChildName, Input),
+			     GroupActivationValue = proplists:get_value (Message, Group),
+			     [GroupActivationValue | Acc]
+		     end,
+		     [],
+		     CoincidenceData),
     
-    {CoincidenceName, Distance}.
+    %% multiply all elements in the list
+    Density = lists:foldl (fun (V, Prod) -> V * Prod end, GroupsActivationValues),
 
-
-%% -----------------------------------------------------------------------------
-%% Func: norm
-%% @doc Compute the Euclidean norm between two binaries, dividing them 
-%% into chunks of Chunk bits each.
-%%
-%% Parameters:
-%%   C1 :: binary ()
-%%   C2 :: binary ()
-%%   ChunkSize :: int ()
-%%
-%% Reply:
-%%   Norm :: float ()
-%% -----------------------------------------------------------------------------
-norm (C1, C2, ChunkSize) ->
-    norm ([], C1, C2, ChunkSize).
-
-norm (Acc, <<>>, <<>>, _) ->
-    math:sqrt (lists:sum (Acc));
-
-norm (Acc, C1, C2, ChunkSize) ->
-    <<E1:ChunkSize, R1/binary >> = C1,
-    <<E2:ChunkSize, R2/binary >> = C2,
-    norm ([ math:pow ( E1 - E2, 2) | Acc ], R1, R2, ChunkSize).
+    {CoincidenceName, Density}.
 
     
 %% -----------------------------------------------------------------------------
@@ -353,28 +329,8 @@ set_state (Data, State) ->
 		       {pcg, PCG}]).
 		   
 %% tests
-norm_test () ->
-    I1 = <<1,1,1>>,
-    I2 = <<2,2,2>>,
-    ChunkSize = 8,
-    
-    ?assertEqual ( norm(I1, I1, ChunkSize), 0.0 ),
-    ?assertEqual ( norm(I1, I2, ChunkSize), math:sqrt(3) ).
-
-
-compute_distance_test () ->
-    Coincidence = #coincidence {
-      name = c1, 
-      data = <<1,1,1>>
-     },
-    Input = #entry_node_input {
-      chunk_size = 8,
-      binary_data = <<2,2,2>>
-     },
-    Sigma = 1.0,
-    Result = compute_distance (Coincidence, Input, Sigma),
-
-    ?assertEqual ({c1, math:exp (- math:pow (math:sqrt(3), 2))}, Result).
+compute_density_over_coincidence_test () ->
+    ok.
 
 compute_density_over_coincidences_test () ->
     Coincidences = [#coincidence {name = c1, data = <<1,1,1>>},
