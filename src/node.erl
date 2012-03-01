@@ -91,7 +91,7 @@ inference (ProcessName) ->
 %%   ProcessName :: atom ()
 %%
 %% Reply:
-%%   State :: #entry_node_state () | #node_state () | #output_node_state ()
+%%   State :: #entry_node_state () | #intermediate_node_state () | #output_node_state ()
 %% -----------------------------------------------------------------------------
 read_state (ProcessName) ->
     gen_server:call (ProcessName, read_state).
@@ -102,8 +102,6 @@ read_state (ProcessName) ->
 %%
 %% Parameters:
 %%   ProcessName :: atom ()
-%%
-%% Reply:
 %%   State :: #entry_node_state () | #node_state () | #output_node_state ()
 %% -----------------------------------------------------------------------------
 set_state (ProcessName, State) ->

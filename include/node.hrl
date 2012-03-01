@@ -65,7 +65,7 @@
 
 %%
 %% intermediate_node_state { lambda_minus :: [ { origin :: atom (), 
-%%                                        lambda :: float () } ] 
+%%                                               lambda :: float () } ] 
 %%                           lambda_plus :: [ { temporal_group_name :: atom (), 
 %%                                              density :: float () } ]
 %%                           coincidences :: #coincidence ()

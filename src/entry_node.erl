@@ -305,7 +305,7 @@ make_snapshot (Data) ->
 		      undefined -> undefined;
 		      Entry -> Entry#entry_node_input.binary_data
 		  end,
-    LambdaPlus = table_lookup (Data, lambda_plus, undefined),
+    LambdaPlus = table_lookup (Data, lambda_plus, []),
     Sigma = table_lookup (Data, sigma, undefined),
     Coincidences = table_lookup (Data, coincidences, []),
     CoincidencesOccurrences = table_lookup (Data, coincidences_occurrences, []),

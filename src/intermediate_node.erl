@@ -24,8 +24,7 @@
 %%  ProcessName :: atom ()
 %%  Params :: [ { name, string () }, 
 %%              { layer, string () }, 
-%%              { parent, string () },
-%%              { sigma, float () } ]
+%%              { parent, string () }]
 %% -----------------------------------------------------------------------------
 start_link(ProcessName, Params) ->
     gen_server:start_link({local, ProcessName}, ?MODULE, [Params], []).
@@ -270,15 +269,11 @@ compute_density_over_group (Group, Y, PCG) ->
 %%   Data :: atom ()
 %%
 %% Reply:
-%%   Snapshot :: #entry_node_state ()
+%%   Snapshot :: #intermediate_node_state ()
 %% -----------------------------------------------------------------------------
 make_snapshot (Data) ->
-    LambdaMinus = case table_lookup (Data, current_input, undefined) of
-		      undefined -> undefined;
-		      Entry -> Entry#entry_node_input.binary_data
-		  end,
-    LambdaPlus = table_lookup (Data, lambda_plus, undefined),
-    Sigma = table_lookup (Data, sigma, undefined),
+    LambdaMinus = table_lookup (Data, current_input, []),
+    LambdaPlus = table_lookup (Data, lambda_plus, []),
     Coincidences = table_lookup (Data, coincidences, []),
     CoincidencesOccurrences = table_lookup (Data, coincidences_occurrences, []),
     Y = table_lookup (Data, y, []),
@@ -286,16 +281,15 @@ make_snapshot (Data) ->
     TemporalGroups = table_lookup (Data, temporal_groups, []),
     PCG = table_lookup (Data, pcg, []),
     
-    #entry_node_state { lambda_minus = LambdaMinus,
-			lambda_plus = LambdaPlus,
-			sigma = Sigma,
-			coincidences = Coincidences,
-			coincidences_occurrences = CoincidencesOccurrences,
-			y = Y,
-			t = T,
-			temporal_groups = TemporalGroups,
-			pcg = PCG
-		      }.
+    #intermediate_node_state { lambda_minus = LambdaMinus,
+			       lambda_plus = LambdaPlus,
+			       coincidences = Coincidences,
+			       coincidences_occurrences = CoincidencesOccurrences,
+			       y = Y,
+			       t = T,
+			       temporal_groups = TemporalGroups,
+			       pcg = PCG
+			     }.
 
 table_lookup (TableName, Key, Default) ->
     case ets:lookup (TableName, Key) of
@@ -305,22 +299,17 @@ table_lookup (TableName, Key, Default) ->
 
 
 set_state (Data, State) ->
-    LambdaMinus = State#entry_node_state.lambda_minus,
-    LambdaPlus = State#entry_node_state.lambda_plus,
-    Sigma = State#entry_node_state.sigma,
-    Coincidences = State#entry_node_state.coincidences,
-    CoincidencesOccurrences = State#entry_node_state.coincidences_occurrences,
-    Y = State#entry_node_state.y,
-    T = State#entry_node_state.t,
-    TemporalGroups = State#entry_node_state.temporal_groups,
-    PCG = State#entry_node_state.pcg,
+    LambdaMinus = State#intermediate_node_state.lambda_minus,
+    LambdaPlus = State#intermediate_node_state.lambda_plus,
+    Coincidences = State#intermediate_node_state.coincidences,
+    CoincidencesOccurrences = State#intermediate_node_state.coincidences_occurrences,
+    Y = State#intermediate_node_state.y,
+    T = State#intermediate_node_state.t,
+    TemporalGroups = State#intermediate_node_state.temporal_groups,
+    PCG = State#intermediate_node_state.pcg,
     
-    ets:insert (Data, [{lambda_minus, #entry_node_input { 
-			  chunk_size = undefined,
-			  binary_data = LambdaMinus
-			 }},
+    ets:insert (Data, [{lambda_minus, LambdaMinus},
 		       {lambda_plus, LambdaPlus},
-		       {sigma, Sigma},
 		       {coincidences, Coincidences},
 		       {coincidences_occurrences, CoincidencesOccurrences},
 		       {y, Y},
@@ -329,105 +318,105 @@ set_state (Data, State) ->
 		       {pcg, PCG}]).
 		   
 %% tests
-compute_density_over_coincidence_test () ->
-    ok.
+%% compute_density_over_coincidence_test () ->
+%%     ok.
 
-compute_density_over_coincidences_test () ->
-    Coincidences = [#coincidence {name = c1, data = <<1,1,1>>},
-		    #coincidence {name = c2, data = <<2,2,2>>}],
-    Input = #entry_node_input {chunk_size = 8, binary_data = <<1,1,1>>},
-    Sigma = 1.0,
-    Result = compute_density_over_coincidences (Coincidences, Input,Sigma),
+%% compute_density_over_coincidences_test () ->
+%%     Coincidences = [#coincidence {name = c1, data = <<1,1,1>>},
+%% 		    #coincidence {name = c2, data = <<2,2,2>>}],
+%%     Input = #entry_node_input {chunk_size = 8, binary_data = <<1,1,1>>},
+%%     Sigma = 1.0,
+%%     Result = compute_density_over_coincidences (Coincidences, Input,Sigma),
     
-    ?assertEqual ([{c1, 1.0},
-		   {c2, math:exp (- math:pow (math:sqrt(3), 2))}],
-		  Result).
+%%     ?assertEqual ([{c1, 1.0},
+%% 		   {c2, math:exp (- math:pow (math:sqrt(3), 2))}],
+%% 		  Result).
 
-compute_density_over_group_test () ->
-    Group1 = #temporal_group {name = g1, coincidences = [c1,c2]},
-    Group2 = #temporal_group {name = g2, coincidences = [c1]},
-    Y = [{c1, 0.5}, {c2, 1}],
-    PCG = [{c1, g1, 0.4},
-	   {c1, g2, 1.0},
-	   {c2, g1, 0.6}],
-    Result1 = compute_density_over_group (Group1, Y, PCG),
-    Result2 = compute_density_over_group (Group2, Y, PCG),
+%% compute_density_over_group_test () ->
+%%     Group1 = #temporal_group {name = g1, coincidences = [c1,c2]},
+%%     Group2 = #temporal_group {name = g2, coincidences = [c1]},
+%%     Y = [{c1, 0.5}, {c2, 1}],
+%%     PCG = [{c1, g1, 0.4},
+%% 	   {c1, g2, 1.0},
+%% 	   {c2, g1, 0.6}],
+%%     Result1 = compute_density_over_group (Group1, Y, PCG),
+%%     Result2 = compute_density_over_group (Group2, Y, PCG),
     
-    ?assertEqual ({g1, 0.5 * 0.4 + 0.6}, Result1),
-    ?assertEqual ({g2, 0.5}, Result2).
+%%     ?assertEqual ({g1, 0.5 * 0.4 + 0.6}, Result1),
+%%     ?assertEqual ({g2, 0.5}, Result2).
 
-compute_density_over_groups_test () ->
-    TemporalGroups =
-	[#temporal_group {name = g1, coincidences = [c1,c2]},
-	 #temporal_group {name = g2, coincidences = [c1]}],
-    Y = [{c1, 0.5}, {c2, 1}],
-    PCG = [{c1, g1, 0.4},
-	   {c1, g2, 1.0},
-	   {c2, g1, 0.6}],
+%% compute_density_over_groups_test () ->
+%%     TemporalGroups =
+%% 	[#temporal_group {name = g1, coincidences = [c1,c2]},
+%% 	 #temporal_group {name = g2, coincidences = [c1]}],
+%%     Y = [{c1, 0.5}, {c2, 1}],
+%%     PCG = [{c1, g1, 0.4},
+%% 	   {c1, g2, 1.0},
+%% 	   {c2, g1, 0.6}],
     
-    Result = compute_density_over_groups (Y, PCG, TemporalGroups),
+%%     Result = compute_density_over_groups (Y, PCG, TemporalGroups),
     
-    ?assertEqual ([{g1, 0.5 * 0.4 + 0.6}, {g2, 0.5}], Result).
+%%     ?assertEqual ([{g1, 0.5 * 0.4 + 0.6}, {g2, 0.5}], Result).
 
-create_entry_node_test () ->
-    Name = "node1",
-    Layer = "0",
-    Parent = "node5",
-    ProcessName = node:make_process_name (Layer, Name),
-    Params = [ {name, Name},
-	       {layer, Layer},
-	       {parent, Parent},
-	       {sigma, 1.0} ],
+%% create_entry_node_test () ->
+%%     Name = "node1",
+%%     Layer = "0",
+%%     Parent = "node5",
+%%     ProcessName = node:make_process_name (Layer, Name),
+%%     Params = [ {name, Name},
+%% 	       {layer, Layer},
+%% 	       {parent, Parent},
+%% 	       {sigma, 1.0} ],
     
-    start_link (ProcessName, Params).
+%%     start_link (ProcessName, Params).
 
-read_state_test () ->
-    Name = "node1",
-    Layer = "0",
-    Parent = "node5",
-    ProcessName = node:make_process_name (Layer, Name),
-    Params = [ {name, Name},
-	       {layer, Layer},
-	       {parent, Parent},
-	       {sigma, 1.0} ],
+%% read_state_test () ->
+%%     Name = "node1",
+%%     Layer = "0",
+%%     Parent = "node5",
+%%     ProcessName = node:make_process_name (Layer, Name),
+%%     Params = [ {name, Name},
+%% 	       {layer, Layer},
+%% 	       {parent, Parent},
+%% 	       {sigma, 1.0} ],
     
-    start_link (ProcessName, Params),
+%%     start_link (ProcessName, Params),
     
-    State = node:read_state (ProcessName),
+%%     State = node:read_state (ProcessName),
     
-    ?assertEqual (State#entry_node_state.sigma, 1.0),
-    ?assertEqual (State#entry_node_state.lambda_minus, undefined).
-
-
-feed_test () ->
-    Name = "node1",
-    Layer = "0",
-    BinaryData = <<1,1,1>>,
-    ProcessName = node:make_process_name (Layer, Name),
-    node:feed (ProcessName, 
-	       #entry_node_input
-	       {
-		 chunk_size = 8,
-		 binary_data = BinaryData
-	       }),
-    State = node:read_state (ProcessName),
-    
-    ?assertEqual (State#entry_node_state.lambda_minus,
-		  BinaryData).
+%%     ?assertEqual (State#entry_node_state.sigma, 1.0),
+%%     ?assertEqual (State#entry_node_state.lambda_minus, undefined).
 
 
-set_state_test () ->
-    Name = "node1",
-    Layer = "0",
-    BinaryData = <<1,1,1>>,
-    ProcessName = node:make_process_name (Layer, Name),
-    node:set_state (ProcessName, 
-		    #entry_node_state { lambda_minus = BinaryData }),
+%% feed_test () ->
+%%     Name = "node1",
+%%     Layer = "0",
+%%     BinaryData = <<1,1,1>>,
+%%     ProcessName = node:make_process_name (Layer, Name),
+%%     node:feed (ProcessName, 
+%% 	       #entry_node_input
+%% 	       {
+%% 		 chunk_size = 8,
+%% 		 binary_data = BinaryData
+%% 	       }),
+%%     State = node:read_state (ProcessName),
     
-    State = node:read_state (ProcessName),
+%%     ?assertEqual (State#entry_node_state.lambda_minus,
+%% 		  BinaryData).
+
+
+%% set_state_test () ->
+%%     Name = "node1",
+%%     Layer = "0",
+%%     BinaryData = <<1,1,1>>,
+%%     ProcessName = node:make_process_name (Layer, Name),
+%%     node:set_state (ProcessName, 
+%% 		    #entry_node_state { lambda_minus = BinaryData }),
     
-    ?assertEqual (State#entry_node_state.lambda_minus,
-    		  BinaryData).
+%%     State = node:read_state (ProcessName),
+    
+%%     ?assertEqual (State#entry_node_state.lambda_minus,
+%%     		  BinaryData).
 
 %% !FIXME maybe everything should be a call and not a cast
 %% otherways some tests could fail
