@@ -35,7 +35,35 @@
 	  }).
 
 %%
-%% entry_node_state { lambda_minus :: [ { origin :: atom (), 
+%% entry_node_state { lambda_minus :: binary (),
+%%                    lambda_plus :: [ { temporal_group_name :: atom (), 
+%%                                       density :: float () } ]
+%%                    sigma :: float ()
+%%                    coincidences :: #coincidence ()
+%%                    coincidences_occurrences :: [ { coincidence_name :: atom (), 
+%%                                                    occurrences :: int() } ]
+%%                    y :: [ { coincidence_name :: atom (), 
+%%                             density:: float ()]
+%%                    t :: ??
+%%                    temporal_groups :: #temporal_group ()
+%%                    pcg :: [ { group_name :: atom (), 
+%%                               coincidence_name :: atom (), 
+%%                               probability :: float () } ]
+%%                  }
+-record (entry_node_state, { lambda_minus,
+			     lambda_plus,
+			     sigma,
+			     coincidences,
+			     coincidences_occurrences,
+			     y,
+			     t,
+			     temporal_groups,
+			     pcg
+			   }).
+
+
+%%
+%% intermediate_node_state { lambda_minus :: [ { origin :: atom (), 
 %%                                        lambda :: float () } ] 
 %%                                  | binary ()
 %%
@@ -60,31 +88,15 @@
 %%                               coincidence_name :: atom (), 
 %%                               probability :: float () } ]
 %%                  }
--record (entry_node_state, {
-	   lambda_minus,
-	   lambda_plus,
-	   
-	   sigma,
-	   coincidences,
-	   coincidences_occurrences,
-	   y,
-	   t,
-	   temporal_groups,
-	   pcg
-	  }).
-
-
--record (node_state, {
-	   lambda_minus,
-	   lambda_plus,
-	   
-	   coincidences,
-	   coincidences_occurrences,
-	   y,
-	   t,
-	   temporal_groups,
-	   pcg
-	  }).
+-record (intermediate_node_state, { lambda_minus,
+				    lambda_plus,
+				    coincidences,
+				    coincidences_occurrences,
+				    y,
+				    t,
+				    temporal_groups,
+				    pcg
+				  }).
 
 -record (output_node_state, {
 	   lambda_minus,
