@@ -28,6 +28,7 @@ network_sup \
 layer_sup \
 node \
 entry_node \
+intermediate_node
 
 ERL_OBJS=$(foreach file, $(OBJS), $(EBIN)/$(file).beam)
 

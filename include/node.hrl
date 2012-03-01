@@ -15,7 +15,8 @@
 
 %%
 %% coincidence { name :: atom ()
-%%               data :: [float ()] | binary() }
+%%               data :: [{child :: atom (), temporal_group_name :: atom ()}] 
+%%                     | binary() }
 %%                   
 %%
 -record (coincidence, {
@@ -65,29 +66,19 @@
 %%
 %% intermediate_node_state { lambda_minus :: [ { origin :: atom (), 
 %%                                        lambda :: float () } ] 
-%%                                  | binary ()
-%%
-%%                    lambda_plus :: [ { temporal_group_name :: atom (), 
-%%                                       density :: float () } ]
-%%
-%%                    sigma :: float ()
-%%
-%%                    coincidences :: #coincidence ()
-%%
-%%                    coincidences_occurrences :: [ { coincidence_name :: atom (), 
+%%                           lambda_plus :: [ { temporal_group_name :: atom (), 
+%%                                              density :: float () } ]
+%%                           coincidences :: #coincidence ()
+%%                           coincidences_occurrences :: [ { coincidence_name :: atom (), 
 %%                                                    occurrences :: int() } ]
-%%
-%%                    y :: [ { coincidence_name :: atom (), 
-%%                             density:: float ()]
-%%
-%%                    t :: ??
-%%
-%%                    temporal_groups :: #temporal_group ()
-%%
-%%                    pcg :: [ { group_name :: atom (), 
-%%                               coincidence_name :: atom (), 
-%%                               probability :: float () } ]
-%%                  }
+%%                           y :: [ { coincidence_name :: atom (), 
+%%                                    density:: float ()]
+%%                           t :: ??
+%%                           temporal_groups :: #temporal_group ()
+%%                           pcg :: [ { group_name :: atom (), 
+%%                                      coincidence_name :: atom (), 
+%%                                      probability :: float () } ]
+%%                          }
 -record (intermediate_node_state, { lambda_minus,
 				    lambda_plus,
 				    coincidences,

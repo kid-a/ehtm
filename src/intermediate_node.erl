@@ -1,4 +1,4 @@
--module(entry_node).
+-module(intermediate_node).
 
 -behaviour(gen_server).
 
@@ -15,8 +15,6 @@
 	   parent,
 	   data
 	  }).
-
--define (DEF_SIGMA, 1.0).
 
 %% -----------------------------------------------------------------------------
 %% Func: start_link/0
@@ -39,8 +37,7 @@ start_link(ProcessName, Params) ->
 %% Parameters:
 %%   Params :: [ { name, string () }, 
 %%               { layer, string () }, 
-%%               { parent, string () },
-%%               { sigma, float () } ]
+%%               { parent, string () } ]
 %% -----------------------------------------------------------------------------
 init([Params]) ->
     NodeName = proplists:get_value (name, Params),
@@ -54,11 +51,7 @@ init([Params]) ->
 			    protected, %% other processes can read
 			    {read_concurrency, true}
 			   ]),
-    
-    %% initialize some parameters
-    Sigma = proplists:get_value (sigma, Params, ?DEF_SIGMA),
-    ets:insert (EtsTableName, {sigma, Sigma}),   
-    
+        
     %% initialize the process state
     ParentName = proplists:get_value (parent, Params),
     UpperLayerName = node:get_upper_layer (LayerName),
@@ -93,7 +86,6 @@ handle_cast ({feed, Data}, State) ->
 handle_cast (inference, State) ->
     EtsTableName = State#state.data,
     inference (EtsTableName),
-    propagate (EtsTableName, State),
     {noreply, State};
 
 handle_cast ({set_state, S}, State) ->
@@ -359,21 +351,6 @@ set_state (Data, State) ->
 		       {t, T},
 		       {temporal_groups, TemporalGroups},
 		       {pcg, PCG}]).
-
-
-%% -----------------------------------------------------------------------------
-%% Func: propagate
-%% @doc Propagate the output message to the parent node.
-%%
-%% Parameters:
-%%   Data :: atom ()
-%%   State :: #state
-%% -----------------------------------------------------------------------------
-propagate (Data, State) ->
-    [{_, LambdaPlus}] = ets:lookup (Data, lambda_plus),
-    Parent = State#state.parent,    
-    node:feed (Parent, LambdaPlus).
-    
 		   
 %% tests
 norm_test () ->
