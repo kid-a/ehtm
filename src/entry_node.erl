@@ -77,24 +77,24 @@ handle_call (read_state, _From, State) ->
     Reply = make_snapshot (EtsTableName),
     {reply, Reply , State};
 
+handle_call ({feed, Data}, _From, State) ->
+    EtsTableName = State#state.data,
+    ets:insert(EtsTableName, {lambda_minus, Data}),
+    {reply, ok, State};
+
+handle_call ({set_state, S}, _From, State) ->
+    EtsTableName = State#state.data,
+    set_state (EtsTableName, S),
+    {reply, ok, State};
+
 handle_call (_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
-
-handle_cast ({feed, Data}, State) ->
-    EtsTableName = State#state.data,
-    ets:insert(EtsTableName, {current_input, Data}),
-    {noreply, State};
 
 handle_cast (inference, State) ->
     EtsTableName = State#state.data,
     inference (EtsTableName),
     propagate (EtsTableName, State),
-    {noreply, State};
-
-handle_cast ({set_state, S}, State) ->
-    EtsTableName = State#state.data,
-    set_state (EtsTableName, S),
     {noreply, State};
 
 handle_cast(_Msg, State) ->
@@ -301,7 +301,7 @@ compute_density_over_group (Group, Y, PCG) ->
 %%   Snapshot :: #entry_node_state ()
 %% -----------------------------------------------------------------------------
 make_snapshot (Data) ->
-    LambdaMinus = case table_lookup (Data, current_input, undefined) of
+    LambdaMinus = case table_lookup (Data, lambda_minus, undefined) of
 		      undefined -> undefined;
 		      Entry -> Entry#entry_node_input.binary_data
 		  end,
@@ -433,32 +433,28 @@ compute_density_over_groups_test () ->
     ?assertEqual ([{g1, 0.5 * 0.4 + 0.6}, {g2, 0.5}], Result).
 
 create_entry_node_test () ->
-    Name = "node1",
-    Layer = "0",
-    Parent = "node5",
+    {Name, Layer, Parent , Sigma} = {"node1", "0", "node5", 1.0},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer},
 	       {parent, Parent},
-	       {sigma, 1.0} ],
+	       {sigma, Sigma} ],
     
     start_link (ProcessName, Params).
 
 read_state_test () ->
-    Name = "node1",
-    Layer = "0",
-    Parent = "node5",
+    {Name, Layer, Parent , Sigma} = {"node2", "0", "node5", 1.0},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer},
 	       {parent, Parent},
-	       {sigma, 1.0} ],
+	       {sigma, Sigma} ],
     
     start_link (ProcessName, Params),
     
     State = node:read_state (ProcessName),
     
-    ?assertEqual (State#entry_node_state.sigma, 1.0),
+    ?assertEqual (State#entry_node_state.sigma, Sigma),
     ?assertEqual (State#entry_node_state.lambda_minus, undefined),
     ?assertEqual (State#entry_node_state.lambda_plus, []),
     ?assertEqual (State#entry_node_state.coincidences, []),
@@ -470,38 +466,45 @@ read_state_test () ->
 
 
 feed_test () ->
-    Name = "node1",
-    Layer = "0",
+    {Name, Layer, Parent , Sigma} = {"node3", "0", "node5", 1.0},
     BinaryData = <<1,1,1>>,
     ProcessName = node:make_process_name (Layer, Name),
+    Params = [ {name, Name},
+	       {layer, Layer},
+	       {parent, Parent},
+	       {sigma, Sigma} ],
+
+    start_link (ProcessName, Params),
+
     node:feed (ProcessName, 
 	       #entry_node_input
 	       {
 		 chunk_size = 8,
 		 binary_data = BinaryData
 	       }),
+
     State = node:read_state (ProcessName),
     
-    ?assertEqual (State#entry_node_state.lambda_minus,
-		  BinaryData).
+    ?assertEqual (State#entry_node_state.lambda_minus, BinaryData).
 
 
 set_state_test () ->
-    Name = "node1",
-    Layer = "0",
+    {Name, Layer, Parent , Sigma} = {"node4", "0", "node5", 1.0},
     BinaryData = <<1,1,1>>,
     ProcessName = node:make_process_name (Layer, Name),
+    Params = [ {name, Name},
+	       {layer, Layer},
+	       {parent, Parent},
+	       {sigma, Sigma} ],
+
+    start_link (ProcessName, Params),
+
     node:set_state (ProcessName, 
 		    #entry_node_state { lambda_minus = BinaryData }),
     
     State = node:read_state (ProcessName),
     
-    ?assertEqual (State#entry_node_state.lambda_minus,
-    		  BinaryData).
-
-%% !FIXME maybe everything should be a call and not a cast
-%% otherways some tests could fail
-%% an inference test here
+    ?assertEqual (BinaryData, State#entry_node_state.lambda_minus).
 
 %% !FIXME refactor, some code is duplicated between intermediate and entry
 %% nodes

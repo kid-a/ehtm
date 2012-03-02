@@ -1,4 +1,4 @@
--module(intermediate_node).
+-module(output_node).
 
 -behaviour(gen_server).
 
@@ -12,7 +12,6 @@
 
 -record (state, { 
 	   name,
-	   parent,
 	   data
 	  }).
 
@@ -35,8 +34,7 @@ start_link(ProcessName, Params) ->
 %%
 %% Parameters:
 %%   Params :: [ { name, string () }, 
-%%               { layer, string () }, 
-%%               { parent, string () } ]
+%%               { layer, string () } ]
 %% -----------------------------------------------------------------------------
 init([Params]) ->
     NodeName = proplists:get_value (name, Params),
@@ -52,12 +50,8 @@ init([Params]) ->
 			   ]),
         
     %% initialize the process state
-    ParentName = proplists:get_value (parent, Params),
-    UpperLayerName = node:get_upper_layer (LayerName),
-    ParentProcessName = node:make_process_name (UpperLayerName, ParentName),
     State = #state {
       name = ProcessName,
-      parent = ParentProcessName,
       data = EtsTableName
      },
     {ok, State}.
@@ -71,9 +65,7 @@ handle_call (read_state, _From, State) ->
 
 handle_call ({feed, Data}, _From, State) ->
     EtsTableName = State#state.data,
-    LambdaMinus = table_lookup (EtsTableName, lambda_minus, []),
-    ets:insert (EtsTableName, {lambda_minus, 
-			       [Data | LambdaMinus]}),
+    ets:insert(EtsTableName, {lambda_minus, Data}),
     {reply, ok, State};
 
 handle_call ({set_state, S}, _From, State) ->
@@ -116,15 +108,18 @@ inference (Data) ->
     %% read the state
     [{_, Input}] = ets:lookup (Data, lambda_minus),
     [{_, Coincidences}] = ets:lookup (Data, coincidences),
-    [{_, TemporalGroups}] = ets:lookup (Data, temporal_groups),
-    [{_, PCG}] = ets:lookup (Data, pcg),
+    [{_, Classes}] = ets:lookup (Data, classes),
+    [{_, PriorProbabilities}] = ets:lookup (Data, prior_probabilities),
+    [{_, PCW}] = ets:lookup (Data, pcw),
 
     %% perform inference
     Y = compute_density_over_coincidences (Coincidences, Input),
-    LambdaPlus = compute_density_over_groups (Y, PCG, TemporalGroups),
+    Densities = compute_density_over_classes (Classes, Y, PCW),
+    LambdaPlus = compute_class_posterior_probabilities (Densities, PriorProbabilities),
 
     %% update the state
-    ets:insert (Data, [{y, Y}, 
+    ets:insert (Data, [{y, Y},
+		       {densities_over_classes, Densities},
 		       {lambda_plus, LambdaPlus}]).
     
 
@@ -185,66 +180,66 @@ compute_density_over_coincidence (Coincidence, Input) ->
 
     {CoincidenceName, Density}.
 
-    
 %% -----------------------------------------------------------------------------
-%% Func: compute_density_over_groups
+%% Func: compute_density_over_classes
 %% @doc Given the vector Y of densities over coincidences, computes the vector
-%% of density over coincidences.
+%% of density over classes.
 %% 
 %%
 %% Parameters:
 %%   Y :: [ { coincidence_name :: atom (), y :: float } ]
-%%   PCG :: [ { coincidence_name :: atom (), 
-%%              temporal_group_name :: atom (), 
+%%   PCW :: [ { coincidence_name :: atom (), 
+%%              class_name :: atom (), 
 %%              probability :: float () } ]
-%%   TemporalGroups = [#temporal_group ()]
+%%   Classes = [#class]
 %%
 %% Reply:
-%%   Densities :: [ { temporal_group_name :: atom (), 
+%%   Densities :: [ { class_name :: atom (), 
 %%                    density :: float () } ]
 %% -----------------------------------------------------------------------------
-compute_density_over_groups (Y, PCG, TemporalGroups) ->
-    compute_density_over_groups ([], TemporalGroups, Y, PCG).
+compute_density_over_classes (Classes, Y, PCW) ->
+    compute_density_over_classes ([], Classes, Y, PCW).
 
-compute_density_over_groups (Acc, [], _Y, _PCG) ->
+compute_density_over_classes (Acc, [], _Y, _PCW) ->
     lists:reverse (Acc);
 
-compute_density_over_groups (Acc, TemporalGroups, Y, PCG) ->
-    [First|Rest] = TemporalGroups,
-    Density = compute_density_over_group (First, Y, PCG),
+compute_density_over_classes (Acc, Classes, Y, PCW) ->
+    [First|Rest] = Classes,
+    Density = compute_density_over_class (First, Y, PCW),
     NewAcc = [Density|Acc],
-    compute_density_over_groups (NewAcc, Rest, Y, PCG).
+    compute_density_over_classes (NewAcc, Rest, Y, PCW).
 
 
 %% -----------------------------------------------------------------------------
-%% Func: compute_density_over_group
-%% @doc Given the vector Y of densities over coincidences and a temporal group,
-%% computes the density of that group.
+%% Func: compute_density_over_class
+%% @doc Given the vector Y of densities over coincidences and a decision class,
+%% computes the density of that class
 %% 
 %%
 %% Parameters:
 %%   Y :: [ { coincidence_name :: atom (), y :: float } ]
-%%   PCG :: [ { coincidence_name :: atom (), 
-%%              temporal_group_name :: atom (), 
+%%   PCW :: [ { coincidence_name :: atom (), 
+%%              class_name :: atom (), 
 %%              probability :: float () } ]
-%%   Group :: #temporal_group ()
+%%   Class :: #class ()
 %%
 %% Reply:
-%%   Density :: { temporal_group_name :: atom (), 
+%%   Density :: { class_name :: atom (), 
 %%                density :: float () } 
 %% -----------------------------------------------------------------------------
-compute_density_over_group (Group, Y, PCG) ->
-    GroupName = Group#temporal_group.name,
+compute_density_over_class (Class, Y, PCW) ->
+    ClassName = Class#class.name,
     Probabilities = 
 	lists:foldl (fun (Entry, Acc) ->
+			     %% !FIXME this case is no more needed
 			     case Entry of
-				 {CoincName, GroupName, Value} ->
+				 {CoincName, ClassName, Value} ->
 				     [{CoincName, Value}|Acc];
 				 _ -> Acc
 			     end
 		     end,
 		     [],
-		     PCG),
+		     PCW),
     Densities = 
 	lists:foldl (fun ({CoincName, Yi}, Acc) ->
 			     %% if no probability is found, suppose
@@ -258,8 +253,52 @@ compute_density_over_group (Group, Y, PCG) ->
 		     [],
 		     Y),
 
-    {GroupName, lists:sum (Densities)}.						 
+    {ClassName, lists:sum (Densities)}.
 
+
+%% -----------------------------------------------------------------------------
+%% Func: compute_class_posterior_probabilities
+%% @doc Given the vector Y of densities over classes and the prior probabilities,
+%% computes each class' posterior probability by means of Bayes' inversion
+%% formula
+%% 
+%%
+%% Parameters:
+%%   DensitiesOverClasses :: [ { class_name :: atom (),
+%%                               density :: float () } ]
+%%   PriorProbabilities :: [ { class_name :: atom (),
+%%                             probability :: float () } ]
+%%
+%% Reply:
+%%   PosteriorProbabilities :: { class_name :: atom (), 
+%%                               probability :: float () } 
+%% -----------------------------------------------------------------------------
+compute_class_posterior_probabilities (DensitiesOverClasses, PriorProbabilities) ->
+    %% first, compute the total probability
+    TotalProbability = 
+	lists:sum ( lists:foldl (fun ({ClassName, Density}, Acc) ->
+					 PriorProbability = 
+					     proplists:get_value (ClassName, 
+								  PriorProbabilities),
+
+					 [PriorProbability * Density | Acc]
+				 end,
+				 [],
+				 DensitiesOverClasses)),
+    
+    PosteriorProbabilities = 
+	lists:foldl (fun ({ClassName, Density}, Acc) ->
+			     PriorProbability = 
+				 proplists:get_value (ClassName, 
+						      PriorProbabilities),
+			     PosteriorProbability = 
+				 Density * PriorProbability / TotalProbability,
+			     
+			     [{ClassName, PosteriorProbability} | Acc]
+		     end,
+		     [],
+		     DensitiesOverClasses).
+		    
 
 %% -----------------------------------------------------------------------------
 %% Func: make_snapshot
@@ -271,7 +310,7 @@ compute_density_over_group (Group, Y, PCG) ->
 %%   Data :: atom ()
 %%
 %% Reply:
-%%   Snapshot :: #intermediate_node_state ()
+%%   Snapshot :: #output_node_state ()
 %% -----------------------------------------------------------------------------
 make_snapshot (Data) ->
     LambdaMinus = table_lookup (Data, lambda_minus, []),
@@ -280,18 +319,21 @@ make_snapshot (Data) ->
     CoincidencesOccurrences = table_lookup (Data, coincidences_occurrences, []),
     Y = table_lookup (Data, y, []),
     T = table_lookup (Data, t, []),
-    TemporalGroups = table_lookup (Data, temporal_groups, []),
-    PCG = table_lookup (Data, pcg, []),
+    Classes = table_lookup (Data, classes, []),
+    PriorProbabilities = table_lookup (Data, prior_probabilities, []),
+    PCW = table_lookup (Data, pcw, []),
     
-    #intermediate_node_state { lambda_minus = LambdaMinus,
-			       lambda_plus = LambdaPlus,
-			       coincidences = Coincidences,
-			       coincidences_occurrences = CoincidencesOccurrences,
-			       y = Y,
-			       t = T,
-			       temporal_groups = TemporalGroups,
-			       pcg = PCG
-			     }.
+    #output_node_state { lambda_minus = LambdaMinus,
+			 lambda_plus = LambdaPlus,
+			 coincidences = Coincidences,
+			 coincidences_occurrences = CoincidencesOccurrences,
+			 y = Y,
+			 t = T,
+			 classes = Classes,
+			 prior_probabilities = PriorProbabilities,
+			 pcw = PCW
+		       }.
+
 
 table_lookup (TableName, Key, Default) ->
     case ets:lookup (TableName, Key) of
@@ -301,14 +343,15 @@ table_lookup (TableName, Key, Default) ->
 
 
 set_state (Data, State) ->
-    LambdaMinus = State#intermediate_node_state.lambda_minus,
-    LambdaPlus = State#intermediate_node_state.lambda_plus,
-    Coincidences = State#intermediate_node_state.coincidences,
-    CoincidencesOccurrences = State#intermediate_node_state.coincidences_occurrences,
-    Y = State#intermediate_node_state.y,
-    T = State#intermediate_node_state.t,
-    TemporalGroups = State#intermediate_node_state.temporal_groups,
-    PCG = State#intermediate_node_state.pcg,
+    LambdaMinus = State#output_node_state.lambda_minus,
+    LambdaPlus = State#output_node_state.lambda_plus,
+    Coincidences = State#output_node_state.coincidences,
+    CoincidencesOccurrences = State#output_node_state.coincidences_occurrences,
+    Y = State#output_node_state.y,
+    T = State#output_node_state.t,    
+    Classes = State#output_node_state.classes,
+    PriorProbabilities = State#output_node_state.prior_probabilities,
+    PCW = State#output_node_state.pcw,
     
     ets:insert (Data, [{lambda_minus, LambdaMinus},
 		       {lambda_plus, LambdaPlus},
@@ -316,8 +359,9 @@ set_state (Data, State) ->
 		       {coincidences_occurrences, CoincidencesOccurrences},
 		       {y, Y},
 		       {t, T},
-		       {temporal_groups, TemporalGroups},
-		       {pcg, PCG}]).
+		       {classes, Classes},
+		       {prior_probabilities, PriorProbabilities},
+		       {pcw, PCW}]).
 		   
 %% tests
 compute_density_over_coincidences_test () ->
@@ -335,87 +379,71 @@ compute_density_over_coincidences_test () ->
     
     ?assertEqual ([{c1, 0.6 * 0.6}, {c2, 1.0 * 0.6}], Result).
 
-compute_density_over_group_test () ->
-    Group1 = #temporal_group {name = g1, coincidences = [c1,c2]},
-    Group2 = #temporal_group {name = g2, coincidences = [c1]},
+compute_density_over_classes_test () ->
+    Classes = [#class{name = cl1}, #class{name = cl2}],
     Y = [{c1, 0.5}, {c2, 1}],
-    PCG = [{c1, g1, 0.4},
-	   {c1, g2, 1.0},
-	   {c2, g1, 0.6}],
-    Result1 = compute_density_over_group (Group1, Y, PCG),
-    Result2 = compute_density_over_group (Group2, Y, PCG),
+    PCW = [{c1, cl1, 0.4},
+    	   {c1, cl2, 1.0},
+    	   {c2, cl1, 0.6}],
     
-    ?assertEqual ({g1, 0.5 * 0.4 + 0.6}, Result1),
-    ?assertEqual ({g2, 0.5}, Result2).
+    Result = compute_density_over_classes (Classes, Y, PCW),
+    
+    ?assertEqual ([{cl1, 0.5 * 0.4 + 0.6}, {cl2, 0.5}], Result).
 
-compute_density_over_groups_test () ->
-    TemporalGroups =
-	[#temporal_group {name = g1, coincidences = [c1,c2]},
-	 #temporal_group {name = g2, coincidences = [c1]}],
-    Y = [{c1, 0.5}, {c2, 1}],
-    PCG = [{c1, g1, 0.4},
-	   {c1, g2, 1.0},
-	   {c2, g1, 0.6}],
-    
-    Result = compute_density_over_groups (Y, PCG, TemporalGroups),
-    
-    ?assertEqual ([{g1, 0.5 * 0.4 + 0.6}, {g2, 0.5}], Result).
-
-create_intermediate_node_test () ->
-    {Name, Layer, Parent} = {"node1", "1", "node5"},
+create_output_node_test () ->
+    {Name, Layer} = {"node1", "2"},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
-	       {layer, Layer},
-	       {parent, Parent}],
+	       {layer, Layer}],
     
     start_link (ProcessName, Params).
 
 read_state_test () ->
-    {Name, Layer, Parent} = {"node2", "1", "node5"},
+    {Name, Layer} = {"node2", "2"},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
-	       {layer, Layer},
-	       {parent, Parent}],
+	       {layer, Layer}],
     
     start_link (ProcessName, Params),
    
     State = node:read_state (ProcessName),
     
-    ?assertEqual (State#intermediate_node_state.lambda_minus, []),
-    ?assertEqual (State#intermediate_node_state.lambda_plus, []),
-    ?assertEqual (State#intermediate_node_state.coincidences, []),
-    ?assertEqual (State#intermediate_node_state.coincidences_occurrences, []),
-    ?assertEqual (State#intermediate_node_state.y, []),
-    ?assertEqual (State#intermediate_node_state.t, []),
-    ?assertEqual (State#intermediate_node_state.temporal_groups, []),
-    ?assertEqual (State#intermediate_node_state.pcg, []).
+    ?assertEqual (State#output_node_state.lambda_minus, []),
+    ?assertEqual (State#output_node_state.lambda_plus, []),
+    ?assertEqual (State#output_node_state.coincidences, []),
+    ?assertEqual (State#output_node_state.coincidences_occurrences, []),
+    ?assertEqual (State#output_node_state.y, []),
+    ?assertEqual (State#output_node_state.t, []),
+    ?assertEqual (State#output_node_state.classes, []),
+    ?assertEqual (State#output_node_state.prior_probabilities, []),
+    ?assertEqual (State#output_node_state.pcw, []).
 
 feed_test () ->
-    {Name, Layer, Parent} = {"node3", "1", "node5"},
+    {Name, Layer} = {"node3", "2"},
+    Input = [{'layer1.node1', [{g1, 0.6}, {g2, 1.0}]},
+	     {'layer1.node2', [{g1, 0.6}, {g2, 1.0}, {g3, 0.2}]}],    
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
-	       {layer, Layer},
-	       {parent, Parent}],
-    Input = {'layer0.node1', [{g1, 0.6}, {g2, 1.0}]},
+	       {layer, Layer}],
     start_link (ProcessName, Params),
+
     node:feed (ProcessName, Input),
     State = node:read_state (ProcessName),
-
-    ?assertEqual ([Input], State#intermediate_node_state.lambda_minus).
+    
+    ?assertEqual (State#output_node_state.lambda_minus, Input).
 
 set_state_test () ->
-    {Name, Layer, Parent} = {"node4", "1", "node5"},
-    Input = [{'layer0.node1', [{g1, 0.6}, {g2, 1.0}]},
-	     {'layer0.node2', [{g1, 0.6}, {g2, 1.0}, {g3, 0.2}]}],    
+    {Name, Layer} = {"node4", "2"},
+    Input = [{'layer1.node1', [{g1, 0.6}, {g2, 1.0}]},
+	     {'layer1.node2', [{g1, 0.6}, {g2, 1.0}, {g3, 0.2}]}],
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
-	       {layer, Layer},
-	       {parent, Parent}],
+	       {layer, Layer}],
     start_link (ProcessName, Params),
-    node:set_state (ProcessName, #intermediate_node_state {lambda_minus =  Input}),
+    node:set_state (ProcessName, #output_node_state {lambda_minus =  Input}),
     State = node:read_state (ProcessName),
     
-    ?assertEqual (Input, State#intermediate_node_state.lambda_minus).
+    ?assertEqual (Input, State#output_node_state.lambda_minus).
 
 %% !FIXME refactor, some code is duplicated between intermediate and entry
 %% nodes

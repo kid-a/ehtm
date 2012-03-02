@@ -18,7 +18,9 @@ TEST=erl -pa $(EBIN) -I $(INCLUDE) -I $(EUNIT_INCLUDE) \
 -noshell \
 -run entry_node test \
 -run intermediate_node test \
+-run output_node test \
 -run init stop
+
 
 
 #ERLC=erlc
@@ -29,7 +31,8 @@ network_sup \
 layer_sup \
 node \
 entry_node \
-intermediate_node
+intermediate_node \
+output_node
 
 ERL_OBJS=$(foreach file, $(OBJS), $(EBIN)/$(file).beam)
 

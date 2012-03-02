@@ -132,7 +132,8 @@
 			      t,
 			      classes,
 			      prior_probabilities,
-			      densities_over_classes,
-			      posterior_probabilities,
 			      pcw
 			    }).
+
+%% !FIXME maybe values should be initialized to undefined
+%% to allow selective set of parameters?

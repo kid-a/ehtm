@@ -69,7 +69,7 @@ get_upper_layer (LayerName) ->
 %%   Data :: term ()
 %% -----------------------------------------------------------------------------
 feed (ProcessName, Data) ->
-    gen_server:cast (ProcessName, {feed, Data}).
+    gen_server:call (ProcessName, {feed, Data}).
 
 
 %% -----------------------------------------------------------------------------
@@ -105,6 +105,6 @@ read_state (ProcessName) ->
 %%   State :: #entry_node_state () | #node_state () | #output_node_state ()
 %% -----------------------------------------------------------------------------
 set_state (ProcessName, State) ->
-    gen_server:cast (ProcessName, {set_state, State}).
+    gen_server:call (ProcessName, {set_state, State}).
 
 
