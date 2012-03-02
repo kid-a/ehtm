@@ -313,15 +313,15 @@ compute_class_posterior_probabilities (DensitiesOverClasses, PriorProbabilities)
 %%   Snapshot :: #output_node_state ()
 %% -----------------------------------------------------------------------------
 make_snapshot (Data) ->
-    LambdaMinus = table_lookup (Data, lambda_minus, []),
-    LambdaPlus = table_lookup (Data, lambda_plus, []),
-    Coincidences = table_lookup (Data, coincidences, []),
-    CoincidencesOccurrences = table_lookup (Data, coincidences_occurrences, []),
-    Y = table_lookup (Data, y, []),
-    T = table_lookup (Data, t, []),
-    Classes = table_lookup (Data, classes, []),
-    PriorProbabilities = table_lookup (Data, prior_probabilities, []),
-    PCW = table_lookup (Data, pcw, []),
+    LambdaMinus = utils:table_lookup (Data, lambda_minus, []),
+    LambdaPlus = utils:table_lookup (Data, lambda_plus, []),
+    Coincidences = utils:table_lookup (Data, coincidences, []),
+    CoincidencesOccurrences = utils:table_lookup (Data, coincidences_occurrences, []),
+    Y = utils:table_lookup (Data, y, []),
+    T = utils:table_lookup (Data, t, []),
+    Classes = utils:table_lookup (Data, classes, []),
+    PriorProbabilities = utils:table_lookup (Data, prior_probabilities, []),
+    PCW = utils:table_lookup (Data, pcw, []),
     
     #output_node_state { lambda_minus = LambdaMinus,
 			 lambda_plus = LambdaPlus,
@@ -333,13 +333,6 @@ make_snapshot (Data) ->
 			 prior_probabilities = PriorProbabilities,
 			 pcw = PCW
 		       }.
-
-
-table_lookup (TableName, Key, Default) ->
-    case ets:lookup (TableName, Key) of
-	[] -> Default;
-	[{Key, Value}] -> Value
-    end.
 
 
 set_state (Data, State) ->

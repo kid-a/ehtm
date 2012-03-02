@@ -22,7 +22,6 @@ TEST=erl -pa $(EBIN) -I $(INCLUDE) -I $(EUNIT_INCLUDE) \
 -run init stop
 
 
-
 #ERLC=erlc
 
 OBJS=\
@@ -32,7 +31,8 @@ layer_sup \
 node \
 entry_node \
 intermediate_node \
-output_node
+output_node \
+utils
 
 ERL_OBJS=$(foreach file, $(OBJS), $(EBIN)/$(file).beam)
 

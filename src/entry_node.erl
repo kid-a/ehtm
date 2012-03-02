@@ -301,18 +301,18 @@ compute_density_over_group (Group, Y, PCG) ->
 %%   Snapshot :: #entry_node_state ()
 %% -----------------------------------------------------------------------------
 make_snapshot (Data) ->
-    LambdaMinus = case table_lookup (Data, lambda_minus, undefined) of
+    LambdaMinus = case utils:table_lookup (Data, lambda_minus, undefined) of
 		      undefined -> undefined;
 		      Entry -> Entry#entry_node_input.binary_data
 		  end,
-    LambdaPlus = table_lookup (Data, lambda_plus, []),
-    Sigma = table_lookup (Data, sigma, undefined),
-    Coincidences = table_lookup (Data, coincidences, []),
-    CoincidencesOccurrences = table_lookup (Data, coincidences_occurrences, []),
-    Y = table_lookup (Data, y, []),
-    T = table_lookup (Data, t, []),
-    TemporalGroups = table_lookup (Data, temporal_groups, []),
-    PCG = table_lookup (Data, pcg, []),
+    LambdaPlus = utils:table_lookup (Data, lambda_plus, []),
+    Sigma = utils:table_lookup (Data, sigma, undefined),
+    Coincidences = utils:table_lookup (Data, coincidences, []),
+    CoincidencesOccurrences = utils:table_lookup (Data, coincidences_occurrences, []),
+    Y = utils:table_lookup (Data, y, []),
+    T = utils:table_lookup (Data, t, []),
+    TemporalGroups = utils:table_lookup (Data, temporal_groups, []),
+    PCG = utils:table_lookup (Data, pcg, []),
     
     #entry_node_state { lambda_minus = LambdaMinus,
 			lambda_plus = LambdaPlus,
@@ -324,12 +324,6 @@ make_snapshot (Data) ->
 			temporal_groups = TemporalGroups,
 			pcg = PCG
 		      }.
-
-table_lookup (TableName, Key, Default) ->
-    case ets:lookup (TableName, Key) of
-	[] -> Default;
-	[{Key, Value}] -> Value
-    end.
 
 
 set_state (Data, State) ->

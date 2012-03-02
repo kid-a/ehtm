@@ -71,7 +71,7 @@ handle_call (read_state, _From, State) ->
 
 handle_call ({feed, Data}, _From, State) ->
     EtsTableName = State#state.data,
-    LambdaMinus = table_lookup (EtsTableName, lambda_minus, []),
+    LambdaMinus = utils:table_lookup (EtsTableName, lambda_minus, []),
     ets:insert (EtsTableName, {lambda_minus, 
 			       [Data | LambdaMinus]}),
     {reply, ok, State};
@@ -274,14 +274,14 @@ compute_density_over_group (Group, Y, PCG) ->
 %%   Snapshot :: #intermediate_node_state ()
 %% -----------------------------------------------------------------------------
 make_snapshot (Data) ->
-    LambdaMinus = table_lookup (Data, lambda_minus, []),
-    LambdaPlus = table_lookup (Data, lambda_plus, []),
-    Coincidences = table_lookup (Data, coincidences, []),
-    CoincidencesOccurrences = table_lookup (Data, coincidences_occurrences, []),
-    Y = table_lookup (Data, y, []),
-    T = table_lookup (Data, t, []),
-    TemporalGroups = table_lookup (Data, temporal_groups, []),
-    PCG = table_lookup (Data, pcg, []),
+    LambdaMinus = utils:table_lookup (Data, lambda_minus, []),
+    LambdaPlus = utils:table_lookup (Data, lambda_plus, []),
+    Coincidences = utils:table_lookup (Data, coincidences, []),
+    CoincidencesOccurrences = utils:table_lookup (Data, coincidences_occurrences, []),
+    Y = utils:table_lookup (Data, y, []),
+    T = utils:table_lookup (Data, t, []),
+    TemporalGroups = utils:table_lookup (Data, temporal_groups, []),
+    PCG = utils:table_lookup (Data, pcg, []),
     
     #intermediate_node_state { lambda_minus = LambdaMinus,
 			       lambda_plus = LambdaPlus,
@@ -292,12 +292,6 @@ make_snapshot (Data) ->
 			       temporal_groups = TemporalGroups,
 			       pcg = PCG
 			     }.
-
-table_lookup (TableName, Key, Default) ->
-    case ets:lookup (TableName, Key) of
-	[] -> Default;
-	[{Key, Value}] -> Value
-    end.
 
 
 set_state (Data, State) ->
