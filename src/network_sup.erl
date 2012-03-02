@@ -4,7 +4,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1]).
+-export([start_link/0]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -13,7 +13,9 @@
 %% API functions
 %% ===================================================================
 
-start_link(ConfFile) ->
+start_link() ->
+    %% !FIXME conffile hardcoded here
+    ConfFile = "/home/loris/ehtm/priv/two-layers-network.conf",
     supervisor:start_link({local, ?MODULE}, ?MODULE, [ConfFile]).
 
 %% ===================================================================
@@ -21,8 +23,10 @@ start_link(ConfFile) ->
 %% ===================================================================
 
 init([ConfFile]) ->
+    io:format ("Starting Network Supervisor...~n"),
     RestartStrategy = {one_for_one, 5, 10},
-    {ok, NetworkStructure} = utils:read_network_structure (ConfFile),
+    NetworkDescr = utils:read_network_structure (ConfFile),
+    NetworkStructure = proplists:get_value (layers, NetworkDescr),
     LayersSupervisors = make_supervision_tree (NetworkStructure, []),
     {ok, {RestartStrategy, LayersSupervisors}}.
     
@@ -35,7 +39,7 @@ make_supervision_tree ([Layer | Rest], Acc) ->
     ProcName = layer_sup:make_process_name (LayerName),
     LayerSupervisor = {ProcName,
 		       {layer_sup, start_link, [ProcName, Layer]},
-		       permanente, brutal_kill, supervisor, [layer_sup]},
+		       permanent, brutal_kill, supervisor, [layer_sup]},
     make_supervision_tree (Rest, [LayerSupervisor | Acc]).
 
 

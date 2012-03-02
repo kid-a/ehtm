@@ -17,6 +17,7 @@
 %% ===================================================================
  %% !FIXME doc missing
 start_link(ProcessName, LayerSpec) ->
+    io:format("Supervisor starting... ~p ~n", [ProcessName]),
     supervisor:start_link({local, ProcessName}, ?MODULE, [LayerSpec]).
 
  %% !FIXME doc missing
@@ -43,6 +44,7 @@ make_nodes ({_LayerName, []}, Acc, _) -> Acc;
 
 make_nodes ({LayerName, [{NodeName, NodeSpec}]}, _, output) ->
     %% !FIXME other node parameters could be passed
+    io:format ("Creating child node... ~p ~n", [NodeName]),
     ProcName = node:make_process_name (LayerName, NodeName),
     Params = [{name, NodeName},
 	      {layer, LayerName}],
@@ -55,11 +57,12 @@ make_nodes ({LayerName, [{NodeName, NodeSpec}]}, _, output) ->
 
 make_nodes ({LayerName, [{NodeName, NodeSpec}|Rest]}, Acc, entry) ->
     %% !FIXME other node parameters could be passed
+    io:format ("Creating child node... ~p ~n", [NodeName]),
     ProcName = node:make_process_name (LayerName, NodeName),
     Params = [{name, NodeName},
 	      {layer, LayerName},
-	      {parent, proplists:get_value (NodeSpec, parent)},
-	      {sigma, proplists:get_value (NodeSpec, sigma)}
+	      {parent, proplists:get_value (parent, NodeSpec)},
+	      {sigma, proplists:get_value (sigma, NodeSpec)}
 	     ],
     
     ProcessSpec = {ProcName, 

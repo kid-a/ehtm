@@ -19,6 +19,7 @@ clean:
 clearbak:
 	@$(FIND) . -type f -name \*~ -exec rm {} \;
 
-# run:
-# 	erl -pa $(EBIN) -run application start ehtm
+run:
+	./run.sh
+#erl -pa $(EBIN) -run application start ehtm
 
