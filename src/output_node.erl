@@ -384,7 +384,7 @@ compute_density_over_classes_test () ->
     ?assertEqual ([{cl1, 0.5 * 0.4 + 0.6}, {cl2, 0.5}], Result).
 
 create_output_node_test () ->
-    {Name, Layer} = {"node1", "2"},
+    {Name, Layer} = {node1, 2},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer}],
@@ -392,7 +392,7 @@ create_output_node_test () ->
     start_link (ProcessName, Params).
 
 read_state_test () ->
-    {Name, Layer} = {"node2", "2"},
+    {Name, Layer} = {node2, 2},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer}],
@@ -412,7 +412,7 @@ read_state_test () ->
     ?assertEqual (State#output_node_state.pcw, []).
 
 feed_test () ->
-    {Name, Layer} = {"node3", "2"},
+    {Name, Layer} = {node3, 2},
     Input = [{'layer1.node1', [{g1, 0.6}, {g2, 1.0}]},
 	     {'layer1.node2', [{g1, 0.6}, {g2, 1.0}, {g3, 0.2}]}],    
     ProcessName = node:make_process_name (Layer, Name),
@@ -426,7 +426,7 @@ feed_test () ->
     ?assertEqual (State#output_node_state.lambda_minus, Input).
 
 set_state_test () ->
-    {Name, Layer} = {"node4", "2"},
+    {Name, Layer} = {node4, 2},
     Input = [{'layer1.node1', [{g1, 0.6}, {g2, 1.0}]},
 	     {'layer1.node2', [{g1, 0.6}, {g2, 1.0}, {g3, 0.2}]}],
     ProcessName = node:make_process_name (Layer, Name),

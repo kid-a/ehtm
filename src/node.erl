@@ -19,14 +19,16 @@
 %% qualified name of its process, e.g. 'layer.node'.
 %%
 %% Parameters:
-%%   LayerName :: string ()
-%%   NodeName :: string ()
+%%   LayerName :: integer ()
+%%   NodeName :: atom ()
 %%
 %% Reply:
 %%   ProcessName :: atom()
 %% -----------------------------------------------------------------------------
 make_process_name (LayerName, NodeName) ->
-    list_to_atom ( lists:concat ([LayerName, ".", NodeName]) ).    
+    list_to_atom ( lists:concat ([erlang:integer_to_list (LayerName),
+				  ".",
+				  erlang:atom_to_list (NodeName)])).
 
 
 %% -----------------------------------------------------------------------------
@@ -50,14 +52,12 @@ make_ets_name (ProcessName) ->
 %% higher level in the network hierarchy.
 %%
 %% Parameters:
-%%   LayerName :: string ()
-%%   NodeName :: string ()
+%%   LayerName :: integer ()
 %%
 %% Reply:
-%%   ProcessName :: atom()
+%%   upper_layer :: integer ()
 %% -----------------------------------------------------------------------------
-get_upper_layer (LayerName) -> 
-    erlang:integer_to_list (erlang:list_to_integer (LayerName) + 1).
+get_upper_layer (LayerName) ->  LayerName + 1.
 
 
 %% -----------------------------------------------------------------------------

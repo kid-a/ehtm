@@ -427,7 +427,7 @@ compute_density_over_groups_test () ->
     ?assertEqual ([{g1, 0.5 * 0.4 + 0.6}, {g2, 0.5}], Result).
 
 create_entry_node_test () ->
-    {Name, Layer, Parent , Sigma} = {"node1", "0", "node5", 1.0},
+    {Name, Layer, Parent , Sigma} = {node1, 0, node5, 1.0},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer},
@@ -437,7 +437,7 @@ create_entry_node_test () ->
     start_link (ProcessName, Params).
 
 read_state_test () ->
-    {Name, Layer, Parent , Sigma} = {"node2", "0", "node5", 1.0},
+    {Name, Layer, Parent , Sigma} = {node2, 0, node5, 1.0},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer},
@@ -460,7 +460,7 @@ read_state_test () ->
 
 
 feed_test () ->
-    {Name, Layer, Parent , Sigma} = {"node3", "0", "node5", 1.0},
+    {Name, Layer, Parent , Sigma} = {node3, 0, node5, 1.0},
     BinaryData = <<1,1,1>>,
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
@@ -483,7 +483,7 @@ feed_test () ->
 
 
 set_state_test () ->
-    {Name, Layer, Parent , Sigma} = {"node4", "0", "node5", 1.0},
+    {Name, Layer, Parent , Sigma} = {node4, 0, node5, 1.0},
     BinaryData = <<1,1,1>>,
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},

@@ -356,7 +356,7 @@ compute_density_over_groups_test () ->
     ?assertEqual ([{g1, 0.5 * 0.4 + 0.6}, {g2, 0.5}], Result).
 
 create_intermediate_node_test () ->
-    {Name, Layer, Parent} = {"node1", "1", "node5"},
+    {Name, Layer, Parent} = {node1, 1, node5},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer},
@@ -365,7 +365,7 @@ create_intermediate_node_test () ->
     start_link (ProcessName, Params).
 
 read_state_test () ->
-    {Name, Layer, Parent} = {"node2", "1", "node5"},
+    {Name, Layer, Parent} = {node2, 1, node5},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer},
@@ -385,7 +385,7 @@ read_state_test () ->
     ?assertEqual (State#intermediate_node_state.pcg, []).
 
 feed_test () ->
-    {Name, Layer, Parent} = {"node3", "1", "node5"},
+    {Name, Layer, Parent} = {node3, 1, node5},
     ProcessName = node:make_process_name (Layer, Name),
     Params = [ {name, Name},
 	       {layer, Layer},
@@ -398,7 +398,7 @@ feed_test () ->
     ?assertEqual ([Input], State#intermediate_node_state.lambda_minus).
 
 set_state_test () ->
-    {Name, Layer, Parent} = {"node4", "1", "node5"},
+    {Name, Layer, Parent} = {node4, 1, node5},
     Input = [{'layer0.node1', [{g1, 0.6}, {g2, 1.0}]},
 	     {'layer0.node2', [{g1, 0.6}, {g2, 1.0}, {g3, 0.2}]}],    
     ProcessName = node:make_process_name (Layer, Name),

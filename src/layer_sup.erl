@@ -6,24 +6,63 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/2,
+	make_process_name/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
-
 %% ===================================================================
 %% API functions
 %% ===================================================================
+ %% !FIXME doc missing
+start_link(ProcessName, LayerSpec) ->
+    supervisor:start_link({local, ProcessName}, ?MODULE, [LayerSpec]).
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+ %% !FIXME doc missing
+make_process_name (LayerName) ->
+    erlang:list_to_atom (erlang:integer_to_list(LayerName)).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init([]) ->
-    {ok, { {one_for_one, 5, 10}, []} }.
+init([LayerSpec]) ->
+    {LayerName, Nodes} = LayerSpec,
+    RestartStrategy = {one_for_one, 5, 10},
+    NodeProcesses =
+	if length (Nodes) == 1 -> make_nodes (LayerSpec, [], output); %% output level
+	   LayerName == 0   -> make_nodes (LayerSpec, [], entry); %% input level
+	   true -> make_nodes (LayerSpec, [], intermediate) %% !FIXME not implemented
+	end,
+
+    {ok, {RestartStrategy, NodeProcesses}}.
+
+
+make_nodes ({_LayerName, []}, Acc, _) -> Acc;
+
+make_nodes ({LayerName, [{NodeName, NodeSpec}]}, _, output) ->
+    %% !FIXME other node parameters could be passed
+    ProcName = node:make_process_name (LayerName, NodeName),
+    Params = [{name, NodeName},
+	      {layer, LayerName}],
+    
+    ProcessSpec = {ProcName, 
+		    {output_node, start_link, [ProcName, Params]},
+		    permanent, brutal_kill, worker, [output_node]},
+    [ProcessSpec];
+
+
+make_nodes ({LayerName, [{NodeName, NodeSpec}|Rest]}, Acc, entry) ->
+    %% !FIXME other node parameters could be passed
+    ProcName = node:make_process_name (LayerName, NodeName),
+    Params = [{name, NodeName},
+	      {layer, LayerName},
+	      {parent, proplists:get_value (NodeSpec, parent)},
+	      {sigma, proplists:get_value (NodeSpec, sigma)}
+	     ],
+    
+    ProcessSpec = {ProcName, 
+		   {entry_node, start_link, [ProcName, Params]},
+		   permanent, brutal_kill, worker, [entry_node]},
+    make_nodes ({LayerName, Rest}, [ProcessSpec|Acc], entry).
