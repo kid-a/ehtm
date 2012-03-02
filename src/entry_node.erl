@@ -459,7 +459,14 @@ read_state_test () ->
     State = node:read_state (ProcessName),
     
     ?assertEqual (State#entry_node_state.sigma, 1.0),
-    ?assertEqual (State#entry_node_state.lambda_minus, undefined).
+    ?assertEqual (State#entry_node_state.lambda_minus, undefined),
+    ?assertEqual (State#entry_node_state.lambda_plus, []),
+    ?assertEqual (State#entry_node_state.coincidences, []),
+    ?assertEqual (State#entry_node_state.coincidences_occurrences, []),
+    ?assertEqual (State#entry_node_state.y, []),
+    ?assertEqual (State#entry_node_state.t, []),
+    ?assertEqual (State#entry_node_state.temporal_groups, []),
+    ?assertEqual (State#entry_node_state.pcg, []).    
 
 
 feed_test () ->
@@ -495,3 +502,6 @@ set_state_test () ->
 %% !FIXME maybe everything should be a call and not a cast
 %% otherways some tests could fail
 %% an inference test here
+
+%% !FIXME refactor, some code is duplicated between intermediate and entry
+%% nodes
