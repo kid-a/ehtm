@@ -36,6 +36,16 @@
 	  }).
 
 %%
+%% class { name :: atom ()
+%%         data :: term () }
+%%                   
+%%
+-record (class, {
+	   name,
+	   data
+	  }).
+
+%%
 %% entry_node_state { lambda_minus :: binary (),
 %%                    lambda_plus :: [ { temporal_group_name :: atom (), 
 %%                                       density :: float () } ]
@@ -44,7 +54,7 @@
 %%                    coincidences_occurrences :: [ { coincidence_name :: atom (), 
 %%                                                    occurrences :: int() } ]
 %%                    y :: [ { coincidence_name :: atom (), 
-%%                             density:: float ()]
+%%                             density:: float () } ]
 %%                    t :: ??
 %%                    temporal_groups :: #temporal_group ()
 %%                    pcg :: [ { group_name :: atom (), 
@@ -65,14 +75,15 @@
 
 %%
 %% intermediate_node_state { lambda_minus :: [ { origin :: atom (), 
-%%                                               lambda :: float () } ] 
+%%                                               lambda :: [ { temporal_group_name :: atom (),
+%%                                                             density :: float () ] } ] 
 %%                           lambda_plus :: [ { temporal_group_name :: atom (), 
 %%                                              density :: float () } ]
 %%                           coincidences :: #coincidence ()
 %%                           coincidences_occurrences :: [ { coincidence_name :: atom (), 
 %%                                                    occurrences :: int() } ]
 %%                           y :: [ { coincidence_name :: atom (), 
-%%                                    density:: float ()]
+%%                                    density:: float () } ]
 %%                           t :: ??
 %%                           temporal_groups :: #temporal_group ()
 %%                           pcg :: [ { group_name :: atom (), 
@@ -89,14 +100,39 @@
 				    pcg
 				  }).
 
--record (output_node_state, {
-	   lambda_minus,
-	   outputs,
-	   
-	   coincidences,
-	   coincidences_occurrences,
-	   y,
-	   t,
-	   prior_probabilities,
-	   pcw
-	   }).
+
+%%
+%% output_node_state { lambda_minus :: [ { origin :: atom (), 
+%%                                         lambda :: [ { temporal_group_name :: atom (),
+%%                                                       density :: float () ] } ] 
+%%                     lambda_plus :: [ { class_name :: atom (),
+%%                                        probability :: density } ]
+%%                     coincidences :: #coincidence ()
+%%                     coincidences_occurrences :: [ { coincidence_name :: atom (), 
+%%                                                     occurrences :: int() } ]
+%%                     y :: [ { coincidence_name :: atom (), 
+%%                              density:: float () }]
+%%                     t :: ??
+%%                     classes :: #class
+%%                     prior_probabilities :: [ { class_name :: atom (), 
+%%                                                probability :: float () } ]
+%%                     densities_over_classes :: [ { class_name :: atom (),
+%%                                                   density :: float () } ]
+%%                     posterior_probabilities :: [ { class_name :: atom (),
+%%                                                    density :: float () } ]
+%%                     pcw :: [ { class_name :: atom (), 
+%%                                coincidence_name :: atom (), 
+%%                                probability :: float () } ]
+%%                   }
+-record (output_node_state, { lambda_minus,
+			      lambda_plus,
+			      coincidences,
+			      coincidences_occurrences,
+			      y,
+			      t,
+			      classes,
+			      prior_probabilities,
+			      densities_over_classes,
+			      posterior_probabilities,
+			      pcw
+			    }).
