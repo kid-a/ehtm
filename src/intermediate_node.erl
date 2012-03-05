@@ -78,13 +78,6 @@ handle_call (read_state, _From, State) ->
     Reply = make_snapshot (EtsTableName),
     {reply, Reply , State};
 
-handle_call ({feed, Data}, _From, State) ->
-    EtsTableName = State#state.data,
-    LambdaMinus = utils:table_lookup (EtsTableName, lambda_minus, []),
-    ets:insert (EtsTableName, {lambda_minus, 
-			       [Data | LambdaMinus]}),
-    {reply, ok, State};
-
 handle_call ({set_state, S}, _From, State) ->
     EtsTableName = State#state.data,
     set_state (EtsTableName, S),
@@ -94,16 +87,31 @@ handle_call (_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
+handle_cast ({feed, Data}, State) ->
+    EtsTableName = State#state.data,
+    LambdaMinus = utils:table_lookup (EtsTableName, lambda_minus, []),
+    ets:insert (EtsTableName, {lambda_minus, 
+			       [Data | LambdaMinus]}),
+    
+    if length ([Data | LambdaMinus]) == length (State#state.children) ->
+	    inference (EtsTableName),
+	    ets:insert (EtsTableName, {lambda_minus, []}),
+	    propagate (EtsTableName, State),
+	    {noreply, State};
+       true ->
+	    {noreply, State}
+    end;
+
 handle_cast ({register_child, Child}, State) ->
     ChildrenList = State#state.children,
     NewChildrenList = [Child | ChildrenList],
     NewState = State#state {children = NewChildrenList},
     {noreply, NewState};
 
-handle_cast (inference, State) ->
-    EtsTableName = State#state.data,
-    inference (EtsTableName),
-    {noreply, State};
+%% handle_cast (inference, State) ->
+%%     EtsTableName = State#state.data,
+%%     inference (EtsTableName),
+%%     {noreply, State};
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -327,6 +335,20 @@ set_state (Data, State) ->
 		       {t, T},
 		       {temporal_groups, TemporalGroups},
 		       {pcg, PCG}]).
+
+%% -----------------------------------------------------------------------------
+%% Func: propagate
+%% @doc Propagate the output message to the parent node.
+%%
+%% Parameters:
+%%   Data :: atom ()
+%%   State :: #state
+%% -----------------------------------------------------------------------------
+propagate (Data, State) ->
+    [{_, LambdaPlus}] = ets:lookup (Data, lambda_plus),
+    Parent = State#state.parent,    
+    node:feed (Parent, LambdaPlus).
+
 		   
 %% tests
 compute_density_over_coincidences_test () ->

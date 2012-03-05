@@ -63,8 +63,10 @@ init([Params]) ->
     ParentName = proplists:get_value (parent, Params),
     UpperLayerName = node:get_upper_layer (LayerName),
     ParentProcessName = node:make_process_name (UpperLayerName, ParentName),
+
     io:format ("Registering child ~p with parent ~p ~n", 
     	       [ProcessName, ParentProcessName]),
+
     node:register_child (ParentProcessName, ProcessName),
 
     %% initialize the node state
@@ -82,11 +84,6 @@ handle_call (read_state, _From, State) ->
     Reply = make_snapshot (EtsTableName),
     {reply, Reply , State};
 
-handle_call ({feed, Data}, _From, State) ->
-    EtsTableName = State#state.data,
-    ets:insert(EtsTableName, {lambda_minus, Data}),
-    {reply, ok, State};
-
 handle_call ({set_state, S}, _From, State) ->
     EtsTableName = State#state.data,
     set_state (EtsTableName, S),
@@ -96,11 +93,18 @@ handle_call (_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast (inference, State) ->
+handle_cast ({feed, Data}, State) ->
     EtsTableName = State#state.data,
+    ets:insert(EtsTableName, {lambda_minus, Data}),
     inference (EtsTableName),
     propagate (EtsTableName, State),
     {noreply, State};
+
+%% handle_cast (inference, State) ->
+%%     EtsTableName = State#state.data,
+%%     inference (EtsTableName),
+%%     propagate (EtsTableName, State),
+%%     {noreply, State};
 
 handle_cast(_Msg, State) ->
     {noreply, State}.

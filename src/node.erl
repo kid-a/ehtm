@@ -9,7 +9,7 @@
 	   register_child/2,
 	   get_upper_layer/1,	   
 	   feed/2,
-	   inference/1,
+%%	   inference/1,
 	   read_state/1,
 	   set_state/2
 	 ]).
@@ -82,18 +82,18 @@ register_child (ProcessName, Child) ->
 %%   Data :: term ()
 %% -----------------------------------------------------------------------------
 feed (ProcessName, Data) ->
-    gen_server:call (ProcessName, {feed, Data}).
+    gen_server:cast (ProcessName, {feed, Data}).
 
 
-%% -----------------------------------------------------------------------------
-%% Func: inference
-%% @doc Tells a node process to perform an inference step.
-%%
-%% Parameters:
-%%   ProcessName :: atom ()
-%% -----------------------------------------------------------------------------
-inference (ProcessName) ->
-    gen_server:cast (ProcessName, inference).
+%% %% -----------------------------------------------------------------------------
+%% %% Func: inference
+%% %% @doc Tells a node process to perform an inference step.
+%% %%
+%% %% Parameters:
+%% %%   ProcessName :: atom ()
+%% %% -----------------------------------------------------------------------------
+%% inference (ProcessName) ->
+%%     gen_server:cast (ProcessName, inference).
 
 
 %% -----------------------------------------------------------------------------
