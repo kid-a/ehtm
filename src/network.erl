@@ -81,16 +81,13 @@ handle_call (_Request, _From, State) ->
 
 %% !FIXME to be implemented
 handle_cast({feed, Input}, State) ->
+    io:format ("Feeding Input ~p ~n to Network~n",[Input]),
     InputLayer = proplists:get_value (0, State#state.layers),
     feed_input (Input, InputLayer),
     {noreply, State};
 
-%% !FIXME to be implemented
-handle_cast(inference, State) ->
-    %%inference_step (State#state.layers),
-    {noreply, State};
-
 handle_cast(_Msg, State) ->
+    io:format ("Received unknown message.~n"),
     {noreply, State}.
 
 handle_info(_Info, State) ->
@@ -106,18 +103,23 @@ code_change(_OldVsn, State, _Extra) ->
 %% ancillary functions
 %% -----------------------------------------------------------------------------
 feed_input (Input, InputLayer) ->
-    {InputData, InputSize} = Input,
+    {InputData, InputSize, ChunkSize} = Input,
     NumerOfNodes = length (InputLayer),
-    {FirstNodeRF, RF} = make_receptive_field_size (InputSize, NumerOfNodes),
+    {FirstNodeRF, RF} = make_receptive_field_size (InputSize, NumerOfNodes, ChunkSize),
     
-    <<E1:FirstNodeRF, RestOfData/binary >> = InputData,
+    <<E1:FirstNodeRF, 
+      RestOfData/binary >> = InputData,
+
     [{FirstNodeName, _} | RestOfNodes] = InputLayer,
     node:feed (node:make_process_name (0, FirstNodeName), E1),
     feed_input (RestOfData, RestOfNodes, RF).
 
-feed_input (<<>>, [], RF) -> ok;
+feed_input (<<>>, [], RF) -> 
+    io:format ("~n"),
+    ok;
 
 feed_input (Data, [{NodeName, _}|RestOfNodes], RF) ->
+    io:format ("..."),
     <<Chunk:RF, RestOfData/binary >> = Data,
     node:feed (node:make_process_name (0, NodeName), Chunk),
     feed_input (RestOfData, RestOfNodes, RF).
@@ -143,7 +145,7 @@ feed_input (Data, [{NodeName, _}|RestOfNodes], RF) ->
 %%   {Size :: integer ()
 %%    Rest :: integer ()}
 %% -----------------------------------------------------------------------------
-make_receptive_field_size (InputSize, NumberOfNodes) ->
+make_receptive_field_size (InputSize, NumberOfNodes, ChunkSize) ->
     Size = InputSize div NumberOfNodes,
     Rest = InputSize - (Size * NumberOfNodes),
-    {Size, Rest}.
+    {(Size + Rest) * ChunkSize, Size * ChunkSize}.

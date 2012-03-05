@@ -51,6 +51,10 @@ init([Params]) ->
 			   ]),
         
     %% initialize the process state
+    ets:insert (EtsTableName, {coincidences, []}),
+    ets:insert (EtsTableName, {classes, []}),
+    ets:insert (EtsTableName, {prior_probabilities, []}),
+    ets:insert (EtsTableName, {pcw, []}),
     State = #state {
       name = ProcessName,
       data = EtsTableName,
@@ -75,12 +79,14 @@ handle_call (_Request, _From, State) ->
     {reply, Reply, State}.
 
 handle_cast ({feed, Data}, State) ->
+    io:format("Output node ~p receiving input ~p ~n", [State#state.name, Data]),
     EtsTableName = State#state.data,
     LambdaMinus = utils:table_lookup (EtsTableName, lambda_minus, []),
     ets:insert (EtsTableName, {lambda_minus, 
 			       [Data | LambdaMinus]}),
     
     if length ([Data | LambdaMinus]) == length (State#state.children) ->
+	    io:format("Output node ~p performing inference.~n", [State#state.name]),
 	    inference (EtsTableName),
 	    ets:insert (EtsTableName, {lambda_minus, []}),
 	    {noreply, State};
@@ -92,7 +98,7 @@ handle_cast ({register_child, Child}, State) ->
     ChildrenList = State#state.children,
     NewChildrenList = [Child | ChildrenList],
     NewState = State#state {children = NewChildrenList},
-    {noreply, State};
+    {noreply, NewState};
 
 %% handle_cast (inference, State) ->
 %%     EtsTableName = State#state.data,

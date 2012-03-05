@@ -63,6 +63,9 @@ init([Params]) ->
     node:register_child (ParentProcessName, ProcessName),
 
     %% initialize the node state
+    ets:insert (EtsTableName, {coincidences, []}),
+    ets:insert (EtsTableName, {temporal_groups, []}),
+    ets:insert (EtsTableName, {pcg, []}),
     State = #state {
       name = ProcessName,
       parent = ParentProcessName,
@@ -88,12 +91,14 @@ handle_call (_Request, _From, State) ->
     {reply, Reply, State}.
 
 handle_cast ({feed, Data}, State) ->
+    io:format("Intermediate node ~p receiving input ~p ~n", [State#state.name, Data]),
     EtsTableName = State#state.data,
     LambdaMinus = utils:table_lookup (EtsTableName, lambda_minus, []),
     ets:insert (EtsTableName, {lambda_minus, 
 			       [Data | LambdaMinus]}),
     
     if length ([Data | LambdaMinus]) == length (State#state.children) ->
+	    io:format("Intermediate node ~p performing inference.~n", [State#state.name]),
 	    inference (EtsTableName),
 	    ets:insert (EtsTableName, {lambda_minus, []}),
 	    propagate (EtsTableName, State),

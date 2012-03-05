@@ -33,7 +33,8 @@ node \
 entry_node \
 intermediate_node \
 output_node \
-utils 
+utils \
+test
 ##examples
 
 ERL_OBJS=$(foreach file, $(OBJS), $(EBIN)/$(file).beam)

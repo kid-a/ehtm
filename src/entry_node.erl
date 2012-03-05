@@ -70,6 +70,9 @@ init([Params]) ->
     node:register_child (ParentProcessName, ProcessName),
 
     %% initialize the node state
+    ets:insert (EtsTableName, {coincidences, []}),
+    ets:insert (EtsTableName, {temporal_groups, []}),
+    ets:insert (EtsTableName, {pcg, []}),
     State = #state {
       name = ProcessName,
       parent = ParentProcessName,
@@ -94,6 +97,7 @@ handle_call (_Request, _From, State) ->
     {reply, Reply, State}.
 
 handle_cast ({feed, Data}, State) ->
+    io:format("Entry node ~p receiving input ~p ~n", [State#state.name, Data]),
     EtsTableName = State#state.data,
     ets:insert(EtsTableName, {lambda_minus, Data}),
     inference (EtsTableName),
@@ -130,7 +134,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% -----------------------------------------------------------------------------
 inference (Data) ->
     %% read the state
-    [{_, Input}] = ets:lookup (Data, current_input),
+    [{_, Input}] = ets:lookup (Data, lambda_minus),
     [{_, Coincidences}] = ets:lookup (Data, coincidences),
     [{_, Sigma}] = ets:lookup (Data, sigma),
     [{_, TemporalGroups}] = ets:lookup (Data, temporal_groups),
