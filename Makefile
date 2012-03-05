@@ -21,5 +21,4 @@ clearbak:
 
 run:
 	./run.sh
-#erl -pa $(EBIN) -run application start ehtm
 
