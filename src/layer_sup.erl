@@ -34,7 +34,7 @@ init([LayerSpec]) ->
     NodeProcesses =
 	if length (Nodes) == 1 -> make_nodes (LayerSpec, [], output); %% output level
 	   LayerName == 0   -> make_nodes (LayerSpec, [], entry); %% input level
-	   true -> make_nodes (LayerSpec, [], intermediate) %% !FIXME not implemented
+	   true -> make_nodes (LayerSpec, [], intermediate) %% intermediate level
 	end,
 
     {ok, {RestartStrategy, NodeProcesses}}.
@@ -42,30 +42,46 @@ init([LayerSpec]) ->
 
 make_nodes ({_LayerName, []}, Acc, _) -> Acc;
 
-make_nodes ({LayerName, [{NodeName, NodeSpec}]}, _, output) ->
+
+make_nodes ({LayerName, [{NodeName, NodeSpec}|Rest]}, Acc, NodeType) ->
     %% !FIXME other node parameters could be passed
     io:format ("Creating child node... ~p ~n", [NodeName]),
     ProcName = node:make_process_name (LayerName, NodeName),
-    Params = [{name, NodeName},
-	      {layer, LayerName}],
     
-    ProcessSpec = {ProcName, 
-		    {output_node, start_link, [ProcName, Params]},
-		    permanent, brutal_kill, worker, [output_node]},
-    [ProcessSpec];
+    ProcessSpec = 
+	case NodeType of 
+	    entry ->
+		Params = 
+		    [{name, NodeName},
+		     {layer, LayerName},
+		     {parent, proplists:get_value (parent, NodeSpec)},
+		     {sigma, proplists:get_value (sigma, NodeSpec)}
+		    ],
 
+		{ProcName, 
+		 {entry_node, start_link, [ProcName, Params]},
+		 permanent, brutal_kill, worker, [entry_node]};
+	    
+	    intermediate ->
+		Params = 
+		    [{name, NodeName},
+		     {layer, LayerName},
+		     {parent, proplists:get_value (parent, NodeSpec)}
+		    ],
 
-make_nodes ({LayerName, [{NodeName, NodeSpec}|Rest]}, Acc, entry) ->
-    %% !FIXME other node parameters could be passed
-    io:format ("Creating child node... ~p ~n", [NodeName]),
-    ProcName = node:make_process_name (LayerName, NodeName),
-    Params = [{name, NodeName},
-	      {layer, LayerName},
-	      {parent, proplists:get_value (parent, NodeSpec)},
-	      {sigma, proplists:get_value (sigma, NodeSpec)}
-	     ],
+		{ProcName, 
+		 {intermediate_node, start_link, [ProcName, Params]},
+		 permanent, brutal_kill, worker, [intermediate_node]};
+	    
+	    output ->
+		Params = [{name, NodeName},
+			  {layer, LayerName}],
     
-    ProcessSpec = {ProcName, 
-		   {entry_node, start_link, [ProcName, Params]},
-		   permanent, brutal_kill, worker, [entry_node]},
+		{ProcName, 
+		 {output_node, start_link, [ProcName, Params]},
+		 permanent, brutal_kill, worker, [output_node]}
+	end,
+		
     make_nodes ({LayerName, Rest}, [ProcessSpec|Acc], entry).
+
+    
