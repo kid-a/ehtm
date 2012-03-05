@@ -28,7 +28,8 @@ init([ConfFile]) ->
     NetworkDescr = utils:read_network_structure (ConfFile),
     NetworkStructure = proplists:get_value (layers, NetworkDescr),
     LayersSupervisors = make_supervision_tree (NetworkStructure, []),
-    {ok, {RestartStrategy, LayersSupervisors}}.
+    NetworkProcess = make_network_process (NetworkDescr),
+    {ok, {RestartStrategy, [NetworkProcess| LayersSupervisors]}}.
     
 
 %% -------------------------------------------------------------------
@@ -41,5 +42,14 @@ make_supervision_tree ([Layer | Rest], Acc) ->
 		       {layer_sup, start_link, [ProcName, Layer]},
 		       permanent, brutal_kill, supervisor, [layer_sup]},
     make_supervision_tree (Rest, [LayerSupervisor | Acc]).
+%%
 
+%%
+make_network_process (NetworkStructure) ->
+    io:format ("Creating network process...~n"),
+    NetworkName = proplists:get_value (name, NetworkStructure),
+    ProcName = network:make_process_name (NetworkName),
+    {ProcName,
+     {network, start_link, [ProcName, NetworkStructure]},
+     permanent, brutal_kill, worker, [network]}.
 

@@ -12,7 +12,8 @@
 
 -record (state, { 
 	   name,
-	   data
+	   data,
+	   children
 	  }).
 
 %% -----------------------------------------------------------------------------
@@ -52,7 +53,8 @@ init([Params]) ->
     %% initialize the process state
     State = #state {
       name = ProcessName,
-      data = EtsTableName
+      data = EtsTableName,
+      children = []
      },
     {ok, State}.
 
@@ -76,6 +78,12 @@ handle_call ({set_state, S}, _From, State) ->
 handle_call (_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
+
+handle_cast ({register_child, Child}, State) ->
+    ChildrenList = State#state.children,
+    NewChildrenList = [Child | ChildrenList],
+    NewState = State#state {children = NewChildrenList},
+    {noreply, State};
 
 handle_cast (inference, State) ->
     EtsTableName = State#state.data,

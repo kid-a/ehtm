@@ -6,6 +6,7 @@
 
 -export ([ make_process_name/2,
 	   make_ets_name/1,
+	   register_child/2,
 	   get_upper_layer/1,	   
 	   feed/2,
 	   inference/1,
@@ -61,8 +62,20 @@ get_upper_layer (LayerName) ->  LayerName + 1.
 
 
 %% -----------------------------------------------------------------------------
+%% Func: register_child
+%% @doc Register a child in a parent node.
+%%
+%% Parameters:
+%%   ProcessName :: atom ()
+%%   Child :: atom ()
+%% -----------------------------------------------------------------------------
+register_child (ProcessName, Child) ->
+    gen_server:cast (ProcessName, {register_child, Child}).
+
+
+%% -----------------------------------------------------------------------------
 %% Func: feed/2
-%% @doc Feed data to a node process via an async request.
+%% @doc Feed data to a node process via a sync request.
 %%
 %% Parameters:
 %%   ProcessName :: atom ()

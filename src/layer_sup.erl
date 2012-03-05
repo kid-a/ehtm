@@ -82,4 +82,4 @@ make_nodes ({LayerName, [{NodeName, NodeSpec}|Rest]}, Acc, NodeType) ->
 		 permanent, brutal_kill, worker, [output_node]}
 	end,
 		
-    make_nodes ({LayerName, Rest}, [ProcessSpec|Acc], entry).
+    make_nodes ({LayerName, Rest}, [ProcessSpec|Acc], NodeType).

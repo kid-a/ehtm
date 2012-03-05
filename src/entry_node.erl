@@ -59,10 +59,15 @@ init([Params]) ->
     Sigma = proplists:get_value (sigma, Params, ?DEF_SIGMA),
     ets:insert (EtsTableName, {sigma, Sigma}),   
     
-    %% initialize the process state
+    %% register this node in the parent node
     ParentName = proplists:get_value (parent, Params),
     UpperLayerName = node:get_upper_layer (LayerName),
     ParentProcessName = node:make_process_name (UpperLayerName, ParentName),
+    io:format ("Registering child ~p with parent ~p ~n", 
+    	       [ProcessName, ParentProcessName]),
+    node:register_child (ParentProcessName, ProcessName),
+
+    %% initialize the node state
     State = #state {
       name = ProcessName,
       parent = ParentProcessName,

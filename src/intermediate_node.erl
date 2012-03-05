@@ -13,11 +13,12 @@
 -record (state, { 
 	   name,
 	   parent,
+	   children,
 	   data
 	  }).
 
 %% -----------------------------------------------------------------------------
-%% Func: start_link/0
+%% Func: start_link/2
 %% @doc Starts an entry_node process.
 %%
 %% Parameters: 
@@ -51,13 +52,21 @@ init([Params]) ->
 			    {read_concurrency, true}
 			   ]),
         
-    %% initialize the process state
+    %% register this node in the parent node
     ParentName = proplists:get_value (parent, Params),
     UpperLayerName = node:get_upper_layer (LayerName),
     ParentProcessName = node:make_process_name (UpperLayerName, ParentName),
+
+    io:format ("Registering child ~p with parent ~p ~n", 
+    	       [ProcessName, ParentProcessName]),
+
+    node:register_child (ParentProcessName, ProcessName),
+
+    %% initialize the node state
     State = #state {
       name = ProcessName,
       parent = ParentProcessName,
+      children = [],
       data = EtsTableName
      },
     {ok, State}.
@@ -84,6 +93,12 @@ handle_call ({set_state, S}, _From, State) ->
 handle_call (_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
+
+handle_cast ({register_child, Child}, State) ->
+    ChildrenList = State#state.children,
+    NewChildrenList = [Child | ChildrenList],
+    NewState = State#state {children = NewChildrenList},
+    {noreply, NewState};
 
 handle_cast (inference, State) ->
     EtsTableName = State#state.data,
