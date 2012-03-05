@@ -4,14 +4,14 @@
 
 FIND=find
 INCLUDE=../include
+IMG_INCLUDE=../../erl_img/include
 EUNIT_INCLUDE=$(shell echo /usr/lib/erlang/lib/eunit-*/include)
 
 EBIN=../ebin/
-IMG_EBIN=../../erl_img/ebin
 
 BEAM=erlc -b beam \
 	-pa $(EBIN) \
-	-I $(INCLUDE) \
+	-I $(INCLUDE) -I $(IMG_INCLUDE) \
 	-o $(EBIN)
 
 TEST=erl -pa $(EBIN) -I $(INCLUDE) -I $(EUNIT_INCLUDE) \
