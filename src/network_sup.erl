@@ -15,7 +15,7 @@
 
 start_link() ->
     %% !FIXME conffile hardcoded here
-    ConfFile = "/home/loris/ehtm/priv/two-layers-network.conf",
+    ConfFile = utils:configuration_file (),
     supervisor:start_link({local, ?MODULE}, ?MODULE, [ConfFile]).
 
 %% ===================================================================

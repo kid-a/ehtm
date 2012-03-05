@@ -83,5 +83,3 @@ make_nodes ({LayerName, [{NodeName, NodeSpec}|Rest]}, Acc, NodeType) ->
 	end,
 		
     make_nodes ({LayerName, Rest}, [ProcessSpec|Acc], entry).
-
-    
