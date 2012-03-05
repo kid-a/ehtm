@@ -27,6 +27,7 @@ TEST=erl -pa $(EBIN) -I $(INCLUDE) -I $(EUNIT_INCLUDE) \
 OBJS=\
 ehtm_app \
 network_sup \
+network \
 layer_sup \
 node \
 entry_node \
