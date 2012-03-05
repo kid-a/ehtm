@@ -1,0 +1,24 @@
+%-*- mode: erlang -*-
+%%
+%% algorithm.erl.src 
+%%
+
+-module (algorithm).
+
+-export([train_entry_node/1,
+	 train_intermediate_node/1,
+	 train_output_node/1]).
+
+train_entry_node (ProcessName) ->
+    ok.
+
+train_intermediate_node (ProcessName) ->
+    ok.
+
+train_output_node () ->
+    ok.
+
+
+
+
+

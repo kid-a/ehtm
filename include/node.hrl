@@ -50,7 +50,7 @@
 %%                    lambda_plus :: [ { temporal_group_name :: atom (), 
 %%                                       density :: float () } ]
 %%                    sigma :: float ()
-%%                    coincidences :: #coincidence ()
+%%                    coincidences :: [#coincidence ()]
 %%                    coincidences_occurrences :: [ { coincidence_name :: atom (), 
 %%                                                    occurrences :: int() } ]
 %%                    y :: [ { coincidence_name :: atom (), 
@@ -79,9 +79,9 @@
 %%                                                             density :: float () ] } ] 
 %%                           lambda_plus :: [ { temporal_group_name :: atom (), 
 %%                                              density :: float () } ]
-%%                           coincidences :: #coincidence ()
+%%                           coincidences :: [#coincidence ()]
 %%                           coincidences_occurrences :: [ { coincidence_name :: atom (), 
-%%                                                    occurrences :: int() } ]
+%%                                                           occurrences :: int() } ]
 %%                           y :: [ { coincidence_name :: atom (), 
 %%                                    density:: float () } ]
 %%                           t :: ??
@@ -107,7 +107,7 @@
 %%                                                       density :: float () ] } ] 
 %%                     lambda_plus :: [ { class_name :: atom (),
 %%                                        probability :: density } ]
-%%                     coincidences :: #coincidence ()
+%%                     coincidences :: [#coincidence ()]
 %%                     coincidences_occurrences :: [ { coincidence_name :: atom (), 
 %%                                                     occurrences :: int() } ]
 %%                     y :: [ { coincidence_name :: atom (), 
