@@ -195,35 +195,10 @@ compute_distance (Coincidence, Input, Sigma) ->
     CoincidenceName = Coincidence#coincidence.name,
     CoincidenceData = Coincidence#coincidence.data,
     
-    Norm = norm (CoincidenceData, InputData, ChunkSize),
+    Norm = utils:norm (CoincidenceData, InputData, ChunkSize),
     Distance = math:exp ( - math:pow ( (Norm / Sigma), 2 )),
     
     {CoincidenceName, Distance}.
-
-
-%% -----------------------------------------------------------------------------
-%% Func: norm
-%% @doc Compute the Euclidean norm between two binaries, dividing them 
-%% into chunks of Chunk bits each.
-%%
-%% Parameters:
-%%   C1 :: binary ()
-%%   C2 :: binary ()
-%%   ChunkSize :: int ()
-%%
-%% Reply:
-%%   Norm :: float ()
-%% -----------------------------------------------------------------------------
-norm (C1, C2, ChunkSize) ->
-    norm ([], C1, C2, ChunkSize).
-
-norm (Acc, <<>>, <<>>, _) ->
-    math:sqrt (lists:sum (Acc));
-
-norm (Acc, C1, C2, ChunkSize) ->
-    <<E1:ChunkSize, R1/binary >> = C1,
-    <<E2:ChunkSize, R2/binary >> = C2,
-    norm ([ math:pow ( E1 - E2, 2) | Acc ], R1, R2, ChunkSize).
 
     
 %% -----------------------------------------------------------------------------
@@ -321,7 +296,7 @@ make_snapshot (Data) ->
     LambdaPlus = utils:table_lookup (Data, lambda_plus, []),
     Sigma = utils:table_lookup (Data, sigma, undefined),
     Coincidences = utils:table_lookup (Data, coincidences, []),
-    CoincidencesOccurrences = utils:table_lookup (Data, coincidences_occurrences, []),
+    Seen = utils:table_lookup (Data, seen, []),
     Y = utils:table_lookup (Data, y, []),
     T = utils:table_lookup (Data, t, []),
     TemporalGroups = utils:table_lookup (Data, temporal_groups, []),
@@ -331,7 +306,7 @@ make_snapshot (Data) ->
 			lambda_plus = LambdaPlus,
 			sigma = Sigma,
 			coincidences = Coincidences,
-			coincidences_occurrences = CoincidencesOccurrences,
+			seen = Seen,
 			y = Y,
 			t = T,
 			temporal_groups = TemporalGroups,
@@ -344,7 +319,7 @@ set_state (Data, State) ->
     LambdaPlus = State#entry_node_state.lambda_plus,
     Sigma = State#entry_node_state.sigma,
     Coincidences = State#entry_node_state.coincidences,
-    CoincidencesOccurrences = State#entry_node_state.coincidences_occurrences,
+    Seen = State#entry_node_state.seen,
     Y = State#entry_node_state.y,
     T = State#entry_node_state.t,
     TemporalGroups = State#entry_node_state.temporal_groups,
@@ -357,7 +332,7 @@ set_state (Data, State) ->
 		       {lambda_plus, LambdaPlus},
 		       {sigma, Sigma},
 		       {coincidences, Coincidences},
-		       {coincidences_occurrences, CoincidencesOccurrences},
+		       {seen, Seen},
 		       {y, Y},
 		       {t, T},
 		       {temporal_groups, TemporalGroups},
@@ -384,8 +359,8 @@ norm_test () ->
     I2 = <<2,2,2>>,
     ChunkSize = 8,
     
-    ?assertEqual ( norm(I1, I1, ChunkSize), 0.0 ),
-    ?assertEqual ( norm(I1, I2, ChunkSize), math:sqrt(3) ).
+    ?assertEqual ( utils:norm(I1, I1, ChunkSize), 0.0 ),
+    ?assertEqual ( utils:norm(I1, I2, ChunkSize), math:sqrt(3) ).
 
 
 compute_distance_test () ->
@@ -465,7 +440,7 @@ read_state_test () ->
     ?assertEqual (State#entry_node_state.lambda_minus, undefined),
     ?assertEqual (State#entry_node_state.lambda_plus, []),
     ?assertEqual (State#entry_node_state.coincidences, []),
-    ?assertEqual (State#entry_node_state.coincidences_occurrences, []),
+    ?assertEqual (State#entry_node_state.seen, []),
     ?assertEqual (State#entry_node_state.y, []),
     ?assertEqual (State#entry_node_state.t, []),
     ?assertEqual (State#entry_node_state.temporal_groups, []),

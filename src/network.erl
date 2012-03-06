@@ -16,6 +16,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-include ("node.hrl").
+
 -record (state, 
 	 {
 	   name,
@@ -111,18 +113,26 @@ feed_input (Input, InputLayer) ->
       RestOfData/binary >> = InputData,
 
     [{FirstNodeName, _} | RestOfNodes] = InputLayer,
-    node:feed (node:make_process_name (0, FirstNodeName), E1),
-    feed_input (RestOfData, RestOfNodes, RF).
+    node:feed (node:make_process_name (0, FirstNodeName), 
+	       #entry_node_input { 
+				   chunk_size = ChunkSize,
+				   binary_data = E1
+				 }),
+    feed_input (RestOfData, RestOfNodes, RF, ChunkSize).
 
-feed_input (<<>>, [], RF) -> 
+feed_input (<<>>, [], _RF, _CS) -> 
     io:format ("~n"),
     ok;
 
-feed_input (Data, [{NodeName, _}|RestOfNodes], RF) ->
+feed_input (Data, [{NodeName, _}|RestOfNodes], RF, ChunkSize) ->
     io:format ("..."),
     <<Chunk:RF, RestOfData/binary >> = Data,
-    node:feed (node:make_process_name (0, NodeName), Chunk),
-    feed_input (RestOfData, RestOfNodes, RF).
+    node:feed (node:make_process_name (0, NodeName), 
+	       #entry_node_input { 
+				   chunk_size = ChunkSize,
+				   binary_data = Chunk
+				 }),
+    feed_input (RestOfData, RestOfNodes, RF, ChunkSize).
     
 
 
