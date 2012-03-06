@@ -84,11 +84,14 @@
 %%                           lambda_plus :: [ { temporal_group_name :: atom (), 
 %%                                              density :: float () } ]
 %%                           coincidences :: [#coincidence ()]
-%%                           coincidences_occurrences :: [ { coincidence_name :: atom (), 
-%%                                                           occurrences :: int() } ]
+%%                           seen :: [ { coincidence_name :: atom (), 
+%%                                       occurrences :: int() } ]
+%%                           last_seen :: atom ()
 %%                           y :: [ { coincidence_name :: atom (), 
 %%                                    density:: float () } ]
-%%                           t :: ??
+%%                           t :: [ { coincidence1_name :: atom (),
+%%                                    coincidence2_name :: atom (),
+%%                                    value :: integer () } ]
 %%                           temporal_groups :: #temporal_group ()
 %%                           pcg :: [ { group_name :: atom (), 
 %%                                      coincidence_name :: atom (), 
@@ -97,7 +100,8 @@
 -record (intermediate_node_state, { lambda_minus,
 				    lambda_plus,
 				    coincidences,
-				    coincidences_occurrences,
+				    seen,
+				    last_seen,
 				    y,
 				    t,
 				    temporal_groups,
