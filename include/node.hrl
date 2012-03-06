@@ -116,11 +116,14 @@
 %%                     lambda_plus :: [ { class_name :: atom (),
 %%                                        probability :: density } ]
 %%                     coincidences :: [#coincidence ()]
-%%                     coincidences_occurrences :: [ { coincidence_name :: atom (), 
-%%                                                     occurrences :: int() } ]
+%%                     seen :: [ { coincidence_name :: atom (), 
+%%                                 occurrences :: int() } ]
+%%                     last_seen :: atom ()
 %%                     y :: [ { coincidence_name :: atom (), 
 %%                              density:: float () }]
-%%                     t :: ??
+%%                     t :: [ { coincidence1_name :: atom (),
+%%                                    coincidence2_name :: atom (),
+%%                                    value :: integer () } ]
 %%                     classes :: #class
 %%                     prior_probabilities :: [ { class_name :: atom (), 
 %%                                                probability :: float () } ]
@@ -128,14 +131,15 @@
 %%                                                   density :: float () } ]
 %%                     posterior_probabilities :: [ { class_name :: atom (),
 %%                                                    density :: float () } ]
-%%                     pcw :: [ { class_name :: atom (), 
-%%                                coincidence_name :: atom (), 
+%%                     pcw :: [ { { class_name :: atom (), 
+%%                                 coincidence_name :: atom (), } 
 %%                                probability :: float () } ]
 %%                   }
 -record (output_node_state, { lambda_minus,
 			      lambda_plus,
 			      coincidences,
-			      coincidences_occurrences,
+			      seen,
+			      last_seen,
 			      y,
 			      t,
 			      classes,

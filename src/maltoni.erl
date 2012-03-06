@@ -5,7 +5,7 @@
 
 -export([train_entry_node/1,
 	 train_intermediate_node/1,
-	 train_output_node/1]).
+	 train_output_node/2]).
 
 -include ("node.hrl").
 -include_lib("eunit/include/eunit.hrl").
@@ -92,10 +92,50 @@ train_intermediate_node (Node) ->
     node:set_state (Node, NewState).
 		
 
+train_output_node (Node, Class) ->
+    State = node:read_state (Node),    
+    Widx = utils:extract_widx (State#output_node_state.lambda_minus),
+    {C, Distance} = get_closest_coincidence_to_widx (Widx,
+						     State#output_node_state.coincidences),
+    NewState = 
+	if Distance > ?WIDX_THRESHOLD(length (Widx)) ->
+		NewCoincidence = make_coincidence (State#output_node_state.coincidences,
+						   Widx),
+		NewSeen = update_seen ( add_coincidence_to_seen (
+					  State#output_node_state.seen,
+					  NewCoincidence),
+					NewCoincidence),
 
+		NewPCW = update_pcw (State#output_node_state.pcw, 
+				     NewCoincidence,
+				     Class),
 
-train_output_node (Node) ->
-    ok.
+		%% !FIXME not taking into account temporal gap
+		%% should update T here
+
+		State#output_node_state { 
+		  coincidences = lists:append (State#output_node_state.coincidences,
+					       [NewCoincidence]),
+		  seen = NewSeen,
+		  last_seen = NewCoincidence#coincidence.name,
+		  pcw = NewPCW
+		 };
+
+	   true ->
+		NewSeen = update_seen (State#output_node_state.seen, C),
+		NewPCW = update_pcw (State#output_node_state.pcw, C, Class),
+		
+		%% !FIXME not taking into account temporal gap
+		%% should update T here
+		
+		State#output_node_state {
+		  seen = NewSeen,
+		  last_seen = C#coincidence.name,
+		  pcw = NewPCW
+		 }
+	end,
+
+    node:set_state (Node, NewState).
 
 
 %% -----------------------------------------------------------------------------
@@ -187,6 +227,18 @@ update_seen (Seen, Coincidence) ->
     CoincidenceSeen = proplists:get_value (CoincidenceName, Seen),
     lists:keyreplace (CoincidenceName, 1, Seen,
 		      {CoincidenceName, CoincidenceSeen + 1}).
+
+%% !FIXME missing doc
+update_pcw (PCW, Coincidence, Class) ->
+    Key = {Class, Coincidence#coincidence.name},
+    Value = proplists:get_value (Key, PCW, 0),
+    case Value of 0 ->
+	    lists:append (PCW, [{Key, Value + 1}]);
+	_ ->
+	    lists:keyreplace (Key, 1, PCW, {Key, Value + 1})
+    end.
+
+
 
 
 update_temporal_activation_matrix () -> ok.
