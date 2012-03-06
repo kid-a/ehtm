@@ -1,7 +1,7 @@
 %%
 %% maltoni.erl
 %%
--module (maltoni).
+-module (learning).
 
 -export([train_entry_node/1,
 	 train_intermediate_node/1,

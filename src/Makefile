@@ -33,7 +33,7 @@ node \
 entry_node \
 intermediate_node \
 output_node \
-maltoni \
+learning \
 utils \
 test
 ##examples
