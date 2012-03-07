@@ -57,8 +57,8 @@
 %%                    y :: [ { coincidence_name :: atom (), 
 %%                             density:: float () } ]
 %%                    t :: [ { coincidence1_name :: atom (),
-%%                             coincidence2_name :: atom (),
-%%                             value :: integer () } ]
+%%                             coincidence2_name :: atom () },
+%%                           value :: integer () } } ]
 %%                    temporal_groups :: #temporal_group ()
 %%                    pcg :: [ { group_name :: atom (), 
 %%                               coincidence_name :: atom (), 
@@ -89,9 +89,9 @@
 %%                           last_seen :: atom ()
 %%                           y :: [ { coincidence_name :: atom (), 
 %%                                    density:: float () } ]
-%%                           t :: [ { coincidence1_name :: atom (),
-%%                                    coincidence2_name :: atom (),
-%%                                    value :: integer () } ]
+%%                           t :: [ { { coincidence1_name :: atom (),
+%%                                      coincidence2_name :: atom () },
+%%                                    value :: integer () } } ]
 %%                           temporal_groups :: #temporal_group ()
 %%                           pcg :: [ { group_name :: atom (), 
 %%                                      coincidence_name :: atom (), 
@@ -121,9 +121,9 @@
 %%                     last_seen :: atom ()
 %%                     y :: [ { coincidence_name :: atom (), 
 %%                              density:: float () }]
-%%                     t :: [ { coincidence1_name :: atom (),
-%%                                    coincidence2_name :: atom (),
-%%                                    value :: integer () } ]
+%%                     t :: [ { { coincidence1_name :: atom (),
+%%                                coincidence2_name :: atom () },
+%%                              value :: integer () } } ]
 %%                     classes :: #class
 %%                     prior_probabilities :: [ { class_name :: atom (), 
 %%                                                probability :: float () } ]

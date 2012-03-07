@@ -16,10 +16,12 @@ BEAM=erlc -b beam \
 
 TEST=erl -pa $(EBIN) -I $(INCLUDE) -I $(EUNIT_INCLUDE) \
 -noshell \
--run entry_node test \
--run intermediate_node test \
--run output_node test \
+-run learning test \
 -run init stop
+# -run entry_node test \
+# -run intermediate_node test \
+# -run output_node test \
+# -run init stop
 
 
 #ERLC=erlc

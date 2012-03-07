@@ -1,11 +1,12 @@
 %%
-%% maltoni.erl
+%% learning.erl
 %%
 -module (learning).
 
 -export([train_entry_node/1,
 	 train_intermediate_node/1,
-	 train_output_node/2]).
+	 train_output_node/2
+	]).
 
 -include ("node.hrl").
 -include_lib("eunit/include/eunit.hrl").
@@ -49,6 +50,9 @@ train_entry_node (Node) ->
 		 }
 	end,
 
+    %% !FIXME forget about rare coincidences here
+    %% !FIXME compute coincidence priors here
+
     node:set_state (Node, NewState).
 
 
@@ -88,6 +92,9 @@ train_intermediate_node (Node) ->
 		  last_seen = C#coincidence.name
 		 }
 	end,
+
+    %% !FIXME forget about rare coincidences here
+    %% !FIXME compute coincidence priors here
     
     node:set_state (Node, NewState).
 		
@@ -134,6 +141,9 @@ train_output_node (Node, Class) ->
 		  pcw = NewPCW
 		 }
 	end,
+
+    %% !FIXME forget about rare coincidences here
+    %% !FIXME compute coincidence priors here
 
     node:set_state (Node, NewState).
 
@@ -239,7 +249,100 @@ update_pcw (PCW, Coincidence, Class) ->
     end.
 
 
+%% missing doc
+compute_coincidence_priors (Coincidences, Seen) ->
+    SeenList = lists:map (fun ({_, O}) -> O end, Seen),
+    TotalSeen = list:sum (SeenList),
+    compute_coincidence_priors (Coincidences, Seen, TotalSeen,[]).
+
+compute_coincidence_priors ([], _S, _T, Acc) -> lists:reverse (Acc);
+compute_coincidence_priors ([Concidence|Rest], Seen, TotalSeen, Acc) ->
+    Key = Concidence#coincidence.name,
+    SeenC = proplists:get_value (Key, Seen),
+    Probability = {Key, SeenC / TotalSeen}, %% according to eq. 7
+    compute_coincidence_priors (Rest, Seen, TotalSeen, [Probability|Acc]).
 
 
-update_temporal_activation_matrix () -> ok.
+%% !FIXME missing doc
+make_symmetric (T) ->
+    lists:foldl (fun ({{C1, C2}, Value1}, Acc) ->
+			 Value2 = proplists:get_value ({C2, C1}, T, undefined),
+			 if Value2 == undefined ->
+				 S = Value1 + 0,
+				 [{{C1, C2}, S}, {{C2, C1}, S} | Acc];
+			    true -> 
+				 S = Value1 + Value2,
+				 [{{C1, C2}, S} | Acc]
+			 end
+		 end,
+		 [],
+		 T).
+
+%% !FIXME missing doc
+normalize_over_rows (T) ->
+    normalize_over_rows (T, T, []).
+
+normalize_over_rows ([], _M, Acc) -> Acc;
+normalize_over_rows  (T, Matrix, Acc) ->
+    [{{C1, C2}, Value} | Rest] = T,
+
+    RowSum = sum_over_row (Matrix, C1),
+    P = Value / RowSum,
+
+    normalize_over_rows (Rest, Matrix, [{{C1, C2}, P} | Acc]).
+
+%% !FIXME missing doc
+sum_over_row (T, Row) ->
+    %% get all items from Row
+    R = lists:filter (fun ({{C1, C2}, V}) ->
+			      if C1 == Row -> true;
+				 true -> false
+			      end
+		      end,
+		      T),
+    Values = [ V || {{C1, C2}, V} <- R],
+    lists:sum (Values).
+				  
+			     
+			 
+
 %% tests 
+make_symmetric_test () ->
+    A = [{{c1, c2}, 5}, {{c1, c3}, 6}],
+    B = [{{c1, c3}, 6}, {{c3, c1}, 6}, {{c1, c2}, 5}, {{c2, c1}, 5}],
+
+    A1 = [{{c1, c2}, 5}, {{c2, c1}, 6}, {{c1, c3}, 8}],
+    B1 = [{{c1, c3}, 8}, {{c3, c1}, 8}, {{c2, c1}, 11}, {{c1, c2}, 11}],
+
+    ?assertEqual (B, make_symmetric (A)),
+    ?assertEqual (B1, make_symmetric (A1)).
+
+sum_over_rows_test () ->
+    A = [{{c1, c3}, 6}, {{c3, c1}, 6}, {{c1, c2}, 5}, {{c2, c1}, 5}],
+    A1 = [{{c1, c3}, 8}, {{c3, c1}, 8}, {{c2, c1}, 11}, {{c1, c2}, 11}],
+
+    ?assertEqual (11, sum_over_row (A, c1)),
+    ?assertEqual (6, sum_over_row (A, c3)),
+    ?assertEqual (5, sum_over_row (A, c2)),
+
+    ?assertEqual (19, sum_over_row (A1, c1)),
+    ?assertEqual (8, sum_over_row (A1, c3)),
+    ?assertEqual (11, sum_over_row (A1, c2)).
+
+
+normalize_over_row_test () ->
+    A = [{{c1, c3}, 6}, {{c3, c1}, 6}, {{c1, c2}, 5}, {{c2, c1}, 5}],
+    B = normalize_over_rows (A),
+    
+
+    ?assertEqual (1.0, proplists:get_value ({c2, c1}, B)),
+    
+    ?assertEqual (proplists:get_value ({c1, c2}, A) / sum_over_row (A, c1), 
+		  proplists:get_value ({c1, c2}, B)),
+
+    ?assertEqual (proplists:get_value ({c1, c3}, A) / sum_over_row (A, c1), 
+		  proplists:get_value ({c1, c3}, B)),
+
+    %% ?assertEqual (8/19, proplists:get_value ({c1, c3}, B)),
+    ?assertEqual (1.0, proplists:get_value ({c3, c1}, B)).
+    
