@@ -36,6 +36,7 @@ entry_node \
 intermediate_node \
 output_node \
 learning \
+temporal_pooler \
 utils \
 test
 ##examples
