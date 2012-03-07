@@ -5,7 +5,8 @@
 
 -export([train_entry_node/1,
 	 train_intermediate_node/1,
-	 train_output_node/2
+	 train_output_node/2,
+	 expand_TAM/2
 	]).
 
 -include ("node.hrl").
@@ -338,10 +339,9 @@ expand_TAM (TAM, Coincidences) ->
 
 expand_TAM (_TAM, [], _C, Acc) -> Acc;
 expand_TAM (TAM, [Coincidence|Rest], Coincidences, Acc) ->
-    io:format ("Processing ~p ~n", [Coincidence]),
-    io:format ("Acc: ~p~n", [Acc]),
     R = lists:foldl (fun (OtherCoincidence, A) ->			     
-			     case proplists:is_defined ({Coincidence, OtherCoincidence}, TAM) of
+			     case proplists:is_defined ({Coincidence, OtherCoincidence}, 
+							lists:append (TAM, Acc)) of
 				 true -> A;
 				 _ ->
 				     if Coincidence == OtherCoincidence ->
@@ -354,7 +354,6 @@ expand_TAM (TAM, [Coincidence|Rest], Coincidences, Acc) ->
 		     end,
 		     [],
 		     Coincidences),
-    io:format ("R: ~p ~n", [R]),
     
     expand_TAM (TAM, Rest, Coincidences, 
 		lists:append ([R, Acc])).
@@ -431,5 +430,6 @@ expand_TAM_test () ->
     ?assertEqual (1 , proplists:get_value ({c2, c1}, NewTAM)),
     ?assertEqual (0 , proplists:get_value ({c2, c3}, NewTAM)),
     ?assertEqual (1 , proplists:get_value ({c3, c1}, NewTAM)),
-    ?assertEqual (0 , proplists:get_value ({c3, c2}, NewTAM)).
+    ?assertEqual (0 , proplists:get_value ({c3, c2}, NewTAM)),
+    ?assertEqual (9, length (NewTAM)).
     
