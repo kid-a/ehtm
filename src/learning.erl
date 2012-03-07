@@ -302,9 +302,37 @@ sum_over_row (T, Row) ->
 		      T),
     Values = [ V || {{C1, C2}, V} <- R],
     lists:sum (Values).
-				  
-			     
-			 
+    
+
+%% !FIXME missing doc
+compute_temporal_connections (Coincidences, CoincidencePriors, TAM) ->
+    compute_temporal_connections (Coincidences, CoincidencePriors, TAM, []).
+
+compute_temporal_connections ([], _CP, _TAM, Acc) -> Acc;
+compute_temporal_connections ([Coincidence|Rest], CoincidencePriors, TAM , Acc) -> 
+    Name = Coincidence#coincidence.name,
+
+    Column = lists:filter (fun ({{C1, C2}, _}) ->
+				   if C2 == Name -> true;
+				      true -> false
+				   end
+			   end,
+			   TAM),
+    
+    TemporalConnection = { Name, 
+			   lists:foldl ( 
+			     fun ({{C1, C2}, V}, Acc) ->
+				     Prior = 
+					 proplists:get_value (C1, CoincidencePriors, 0),
+				     
+				     Acc +  Prior * V
+			     end,
+			     0,
+			     Column) },
+    
+    compute_temporal_connections (Rest, CoincidencePriors, 
+				  TAM, [TemporalConnection|Acc]).
+
 
 %% tests 
 make_symmetric_test () ->
@@ -345,4 +373,27 @@ normalize_over_row_test () ->
 
     %% ?assertEqual (8/19, proplists:get_value ({c1, c3}, B)),
     ?assertEqual (1.0, proplists:get_value ({c3, c1}, B)).
+
+
+compute_temporal_connections_test () ->
+    C1 = #coincidence {name = c1},
+    C2 = #coincidence {name = c2},
+    C3 = #coincidence {name = c3},
+   
+    C1Prior = {c1, 0.1},
+    C2Prior = {c2, 0.6},
+    C3Prior = {c3, 0.3},
+    
+    TAM = [{{c1, c3}, 6/11}, {{c3, c1}, 1}, {{c1, c2}, 5/11}, {{c2, c1}, 1}],
+    
+    TC = compute_temporal_connections ([C1,C2,C3], [C1Prior, C2Prior, C3Prior],
+				       TAM),
+    
+    ?assertEqual (0.6 + 0.3 , proplists:get_value (c1, TC)),
+    ?assertEqual (5/11 * 0.1 , proplists:get_value (c2, TC)),
+    ?assertEqual (6/11 * 0.1 , proplists:get_value (c3, TC)).
+    
+    
+    
+    
     
