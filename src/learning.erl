@@ -333,6 +333,35 @@ compute_temporal_connections ([Coincidence|Rest], CoincidencePriors, TAM , Acc) 
     compute_temporal_connections (Rest, CoincidencePriors, 
 				  TAM, [TemporalConnection|Acc]).
 
+expand_TAM (TAM, Coincidences) ->    
+    lists:append ([TAM, expand_TAM(TAM, Coincidences, Coincidences, [])]).
+
+expand_TAM (_TAM, [], _C, Acc) -> Acc;
+expand_TAM (TAM, [Coincidence|Rest], Coincidences, Acc) ->
+    io:format ("Processing ~p ~n", [Coincidence]),
+    io:format ("Acc: ~p~n", [Acc]),
+    R = lists:foldl (fun (OtherCoincidence, A) ->			     
+			     case proplists:is_defined ({Coincidence, OtherCoincidence}, TAM) of
+				 true -> A;
+				 _ ->
+				     if Coincidence == OtherCoincidence ->
+					     [{{Coincidence, OtherCoincidence}, 0}| A];
+					true ->
+					     [{{Coincidence, OtherCoincidence}, 0},
+					      {{OtherCoincidence, Coincidence}, 0} | A]
+				     end
+			     end
+		     end,
+		     [],
+		     Coincidences),
+    io:format ("R: ~p ~n", [R]),
+    
+    expand_TAM (TAM, Rest, Coincidences, 
+		lists:append ([R, Acc])).
+    
+    
+    
+
 
 %% tests 
 make_symmetric_test () ->
@@ -392,8 +421,15 @@ compute_temporal_connections_test () ->
     ?assertEqual (0.6 + 0.3 , proplists:get_value (c1, TC)),
     ?assertEqual (5/11 * 0.1 , proplists:get_value (c2, TC)),
     ?assertEqual (6/11 * 0.1 , proplists:get_value (c3, TC)).
+
+expand_TAM_test () ->
+    TAM = [{{c1, c3}, 6/11}, {{c3, c1}, 1}, {{c1, c2}, 5/11}, {{c2, c1}, 1}],
+    NewTAM = expand_TAM (TAM, [c1, c2, c3]),
     
-    
-    
-    
+    ?assertEqual (5/11 , proplists:get_value ({c1, c2}, NewTAM)),
+    ?assertEqual (6/11 , proplists:get_value ({c1, c3}, NewTAM)),
+    ?assertEqual (1 , proplists:get_value ({c2, c1}, NewTAM)),
+    ?assertEqual (0 , proplists:get_value ({c2, c3}, NewTAM)),
+    ?assertEqual (1 , proplists:get_value ({c3, c1}, NewTAM)),
+    ?assertEqual (0 , proplists:get_value ({c3, c2}, NewTAM)).
     
