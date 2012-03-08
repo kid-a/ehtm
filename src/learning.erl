@@ -15,6 +15,14 @@
 -define (THRESHOLD, 10).
 -define (WIDX_THRESHOLD(X), 30 / 100 * X).
 
+
+%% -----------------------------------------------------------------------------
+%% Func: train_entry_node/1
+%% @doc Train an entry node.
+%%
+%% Parameters:
+%%   Node :: atom ()
+%% -----------------------------------------------------------------------------
 train_entry_node (Node) ->
     State = node:read_state (Node),
     {C, Distance} = get_closest_coincidence (State#entry_node_state.lambda_minus,
@@ -57,6 +65,13 @@ train_entry_node (Node) ->
     node:set_state (Node, NewState).
 
 
+%% -----------------------------------------------------------------------------
+%% Func: train_intermediate_node/1
+%% @doc Train an intermediate node.
+%%
+%% Parameters:
+%%   Node :: atom ()
+%% -----------------------------------------------------------------------------
 train_intermediate_node (Node) ->
     State = node:read_state (Node),    
     Widx = utils:extract_widx (State#intermediate_node_state.lambda_minus),
@@ -100,6 +115,13 @@ train_intermediate_node (Node) ->
     node:set_state (Node, NewState).
 		
 
+%% -----------------------------------------------------------------------------
+%% Func: train_output_node/2
+%% @doc Train an outputnode over a set of classes.
+%%
+%% Parameters:
+%%   Node :: atom ()
+%% -----------------------------------------------------------------------------
 train_output_node (Node, Class) ->
     State = node:read_state (Node),    
     Widx = utils:extract_widx (State#output_node_state.lambda_minus),
@@ -196,7 +218,6 @@ compute_distance ([{Child, WinningGroup}|Rest], Coincidence, Acc) ->
 	    compute_distance (Rest, Coincidence, Acc)
     end.
 	    
-%% !FIXME missing doc
 get_closest_coincidence (LambdaMinus, Coincidences) ->
     [First|Rest] = Coincidences,
     Distance = utils:norm (LambdaMinus#entry_node_input.binary_data,
@@ -220,26 +241,81 @@ get_closest_coincidence (LambdaMinus, [First|Rest], {Name, Distance}) ->
 				     {Name, Distance})
     end.
 
-%% !FIXME missing doc
+
+%% -----------------------------------------------------------------------------
+%% Func: make_coincidence/2
+%% @doc Make a new coindicence out of the LambdaMinus passed as argument.
+%% The name of the new coindicence is determined by incrementing the 
+%% the size of the coincidences list passed as first argument.
+%%
+%% Parameters:
+%%   Coincidences :: [#coincidence]
+%%   LambdaMinus :: term ()
+%%
+%% Reply:
+%%   Coincidence :: #coincidence
+%% -----------------------------------------------------------------------------
 make_coincidence (Coincidences, LambdaMinus) ->
     L = length (Coincidences),
     Name = list_to_atom (lists:concat (["c", erlang:integer_to_list (L + 1)])),
     Data = LambdaMinus,
     #coincidence { name = Name, data = Data}.
 
-%% !FIXME missing doc
+
+%% -----------------------------------------------------------------------------
+%% Func: add_coincidence_to_seen/2
+%% @doc Given a Seen vector, add a new entry concerning the coincidence
+%% passed as second parameter.
+%%
+%% Parameters:
+%%   Seen :: [ { Coincidence :: atom (), Times :: integer () } ]
+%%   Coincidence :: #coindicence
+%%
+%% Reply:
+%%   NewSeen :: [ { Coincidence :: atom (), Times :: integer () } ]
+%% -----------------------------------------------------------------------------
 add_coincidence_to_seen (Seen, Coincidence) ->
     CoincidenceName = Coincidence#coincidence.name,
     lists:append (Seen, [{CoincidenceName, 0}]).
 
-%% !FIXME missing doc
+
+%% -----------------------------------------------------------------------------
+%% Func: update_seen/2
+%% @doc Given a Seen vector, increment the counter for the coincidence passed
+%% as a second argument.
+%%
+%% Parameters:
+%%   Seen :: [ { Coincidence :: atom (), Times :: integer () } ]
+%%   Coincidence :: #coindicence
+%%
+%% Reply:
+%%   NewSeen :: [ { Coincidence :: atom (), Times :: integer () } ]
+%% -----------------------------------------------------------------------------
 update_seen (Seen, Coincidence) ->
     CoincidenceName = Coincidence#coincidence.name,
     CoincidenceSeen = proplists:get_value (CoincidenceName, Seen),
     lists:keyreplace (CoincidenceName, 1, Seen,
 		      {CoincidenceName, CoincidenceSeen + 1}).
 
-%% !FIXME missing doc
+
+
+%% -----------------------------------------------------------------------------
+%% Func: update_pcw/3
+%% @doc Updates the PCW matrix, given that Coincidence has been active in the 
+%% context of Class.
+%%
+%% Parameters:
+%%   PCW :: [ { { class_name :: atom (), 
+%%                coincidence_name :: atom (), } 
+%%            probability :: float () } ]
+%%   Coincidence :: #coindicence
+%%   Class :: atom ()
+%%
+%% Reply:
+%%   NewPCW :: [ { { class_name :: atom (), 
+%%                coincidence_name :: atom (), } 
+%%            probability :: float () } ]
+%% -----------------------------------------------------------------------------
 update_pcw (PCW, Coincidence, Class) ->
     Key = {Class, Coincidence#coincidence.name},
     Value = proplists:get_value (Key, PCW, 0),
@@ -250,7 +326,18 @@ update_pcw (PCW, Coincidence, Class) ->
     end.
 
 
-%% missing doc
+%% -----------------------------------------------------------------------------
+%% Func: compute_coincidence_priors/2
+%% @doc Computes the a priori probability of the occurrence of each Coincidence
+%% passed as first argument.
+%%
+%% Parameters:
+%%   Coincidences :: [ #coindicence ] 
+%%   Seen :: [ { Coincidence :: atom (), Times :: integer () } ]
+%%
+%% Reply:
+%%   Priors :: [ { Coincidence :: atom (), PriorProbability :: float () } ]
+%% -----------------------------------------------------------------------------
 compute_coincidence_priors (Coincidences, Seen) ->
     SeenList = lists:map (fun ({_, O}) -> O end, Seen),
     TotalSeen = list:sum (SeenList),
@@ -264,7 +351,18 @@ compute_coincidence_priors ([Concidence|Rest], Seen, TotalSeen, Acc) ->
     compute_coincidence_priors (Rest, Seen, TotalSeen, [Probability|Acc]).
 
 
-%% !FIXME missing doc
+%% -----------------------------------------------------------------------------
+%% Func: make_symmetric/1
+%% @doc Given a temporal activation matrix, makes it symmetric.
+%%
+%% Parameters:
+%%   T :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%              Occurrences :: integer () } ]
+%%
+%% Reply:
+%%   SymmetricT :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%                    Occurrences :: integer () } ]
+%% -----------------------------------------------------------------------------
 make_symmetric (T) ->
     lists:foldl (fun ({{C1, C2}, Value1}, Acc) ->
 			 Value2 = proplists:get_value ({C2, C1}, T, undefined),
@@ -279,7 +377,19 @@ make_symmetric (T) ->
 		 [],
 		 T).
 
-%% !FIXME missing doc
+
+%% -----------------------------------------------------------------------------
+%% Func: normalize_ovew_rows/1
+%% @doc Given a temporal activation matrix, normalizes it over rows.
+%%
+%% Parameters:
+%%   T :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%          Occurrences :: integer () } ]
+%%
+%% Reply:
+%%   NewT :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%             Occurrences :: integer () } ]
+%% -----------------------------------------------------------------------------
 normalize_over_rows (T) ->
     normalize_over_rows (T, T, []).
 
@@ -292,7 +402,18 @@ normalize_over_rows  (T, Matrix, Acc) ->
 
     normalize_over_rows (Rest, Matrix, [{{C1, C2}, P} | Acc]).
 
-%% !FIXME missing doc
+
+%% -----------------------------------------------------------------------------
+%% Func: sum_over_row
+%% @doc Given a matrix, returns the sum of the element of a given row.
+%%
+%% Parameters:
+%%   T :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%          Occurrences :: integer () } ]
+%%
+%% Reply:
+%%   Sum :: integer ()
+%% -----------------------------------------------------------------------------
 sum_over_row (T, Row) ->
     %% get all items from Row
     R = lists:filter (fun ({{C1, C2}, V}) ->
@@ -305,7 +426,19 @@ sum_over_row (T, Row) ->
     lists:sum (Values).
     
 
-%% !FIXME missing doc
+%% -----------------------------------------------------------------------------
+%% Func: compute_temporal_connections/3
+%% @doc Compute the Temporal Connections vector.
+%%
+%% Parameters:
+%%   Coincidences :: [ #coincidence ]
+%%   CoincidencePriors :: [ {Coincidence :: atom (), Probability :: float () } ]
+%%   TAM :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%                Occurrences :: integer () } ]
+%%
+%% Reply:
+%%   TC [ { Coincidence :: atom (), Probability :: atom () } ]
+%% -----------------------------------------------------------------------------
 compute_temporal_connections (Coincidences, CoincidencePriors, TAM) ->
     compute_temporal_connections (Coincidences, CoincidencePriors, TAM, []).
 
@@ -334,6 +467,20 @@ compute_temporal_connections ([Coincidence|Rest], CoincidencePriors, TAM , Acc) 
     compute_temporal_connections (Rest, CoincidencePriors, 
 				  TAM, [TemporalConnection|Acc]).
 
+
+%% -----------------------------------------------------------------------------
+%% Func: expand_TAM/2
+%% @doc Expand the TAM matrix, filling it with zeros in empty places.
+%%
+%% Parameters:
+%%   TAM :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%            Occurrences :: integer () } ]
+%%   Coincidences :: [ #coincidence ]
+%%
+%% Reply:
+%%   NewTAM :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%                Occurrences :: integer () } ]
+%% -----------------------------------------------------------------------------
 expand_TAM (TAM, Coincidences) ->    
     lists:append ([TAM, expand_TAM(TAM, Coincidences, Coincidences, [])]).
 
@@ -359,9 +506,6 @@ expand_TAM (TAM, [Coincidence|Rest], Coincidences, Acc) ->
 		lists:append ([R, Acc])).
     
     
-    
-
-
 %% tests 
 make_symmetric_test () ->
     A = [{{c1, c2}, 5}, {{c1, c3}, 6}],

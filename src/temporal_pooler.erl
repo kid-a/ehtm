@@ -22,7 +22,7 @@
 %% Parameters:
 %%   TC :: [ { CoincidenceName :: atom (), Probability :: float () } ]
 %%   TAM :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
-%%                Occurrences :: integer () } ]
+%%            Occurrences :: integer () } ]
 %%
 %% Reply:
 %%   TemporalGroups :: [#temporal_group ()]
