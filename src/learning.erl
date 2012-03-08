@@ -352,6 +352,30 @@ compute_coincidence_priors ([Concidence|Rest], Seen, TotalSeen, Acc) ->
 
 
 %% -----------------------------------------------------------------------------
+%% Func: compute_class_priors/2
+%% @doc Computes the a priori probability of the occurrence of a pattern belonging
+%% to a certain class.
+%%
+%% Parameters:
+%%   Classes :: [ #class () ]
+%%   PCW :: [ { { class_name :: atom (), 
+%%                coincidence_name :: atom (), } 
+%%            probability :: float () } ] 
+%%
+%% Reply:
+%%   Priors :: [ { Class :: atom (), PriorProbability :: float () } ]
+%% -----------------------------------------------------------------------------
+compute_class_priors (Classes, PCW) ->
+    Sum = lists:sum (lists:map (fun ({{_,_} V}) -> V end, PCW)),
+    compute_class_priors (Classes, PCW, Sum, []).
+
+compute_class_priors ([], _PCW, Sum, Priors ) -> Priors;
+compute_class_priors ([Class|Rest], PCW, Sum, Acc) ->
+    P = temporal_pooler:sum_over_column (PCW, Class) / Sum,
+    compute_class_priors (Rest, PCW, Sum [{Class, P} | Acc]).
+
+
+%% -----------------------------------------------------------------------------
 %% Func: make_symmetric/1
 %% @doc Given a temporal activation matrix, makes it symmetric.
 %%
@@ -437,7 +461,7 @@ sum_over_row (T, Row) ->
 %%                Occurrences :: integer () } ]
 %%
 %% Reply:
-%%   TC [ { Coincidence :: atom (), Probability :: atom () } ]
+%%   TC :: [ { Coincidence :: atom (), Probability :: atom () } ]
 %% -----------------------------------------------------------------------------
 compute_temporal_connections (Coincidences, CoincidencePriors, TAM) ->
     compute_temporal_connections (Coincidences, CoincidencePriors, TAM, []).
@@ -577,3 +601,6 @@ expand_TAM_test () ->
     ?assertEqual (0 , proplists:get_value ({c3, c2}, NewTAM)),
     ?assertEqual (9, length (NewTAM)).
     
+%% !FIXME to be implemented
+compute_class_prior_test () ->
+    ok.
