@@ -13,7 +13,20 @@
 -define (TOPNEIGHBOURS, 3).
 -define (MAX_GROUP_SIZE, 10).
 
-%% !FIXME missing doc
+%% -----------------------------------------------------------------------------
+%% Func: default_temporal_cluster/2
+%% @doc Implements the default temporal clustering algorithm.
+%% Takes as input Temporal Connection (TC) vector and the Temporal Activation
+%% Matrix (TAM) and returns a list of temporal groups.
+%%
+%% Parameters:
+%%   TC :: [ { CoincidenceName :: atom (), Probability :: float () } ]
+%%   TAM :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%                Occurrences :: integer () } ]
+%%
+%% Reply:
+%%   TemporalGroups :: [#temporal_group ()]
+%% -----------------------------------------------------------------------------
 default_temporal_cluster (TC, TAM) ->
     default_temporal_cluster (TC, TAM, []).
 
@@ -39,7 +52,19 @@ default_temporal_cluster (TC, TAM, Groups) ->
     default_temporal_cluster (NewTC, TAM, [NewGroup|Groups]).
 
 
-%% !FIXME missing doc
+%% -----------------------------------------------------------------------------
+%% Func: make_temporal_group/2
+%% @doc Makes a new group, and fills it with the Coincidence name passed as
+%% first argument. The name of the group is determined by incrementing 
+%% the number of groups passed as second argument.
+%%
+%% Parameters:
+%%   FirstElement :: atom ()
+%%   OtherGroups :: [#coindicence ()]
+%%
+%% Reply:
+%%   NewGroup :: #temporal_group
+%% -----------------------------------------------------------------------------
 make_temporal_group (FirstElement, OtherGroups) ->
     L = length (OtherGroups),
     Name = 
@@ -48,7 +73,26 @@ make_temporal_group (FirstElement, OtherGroups) ->
     #temporal_group { name = Name, coincidences = [FirstElement]}.
 
 
-%% !FIXME missing doc
+%% -----------------------------------------------------------------------------
+%% Func: growing_group/3
+%% @doc Given a temporal group, the Temporal Connection vector (TC) and the 
+%% Temporal Activation Matrix (TAM), enlarge the group by adding coincidences
+%% that are likely to occur close in time with respect to coincidences already
+%% present in the group. Maximum number of allowed coincidences whithin a group
+%% is defined via the MAX_GROUP_SIZE macro.
+%% Returns the enlarged group plus a filtered TC vector, where entries related
+%% to temporal groups that have been clustered have been deleted.
+%%
+%% Parameters:
+%%   Group :: #temporal_group
+%%   TC :: [ { CoincidenceName :: atom (), Probability :: float () } ]
+%%   TAM :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%                Occurrences :: integer () } ]
+%%
+%% Reply:
+%%   {EnlargedGroup :: #temporal_group,
+%%    NeWTC :: [ { CoincidenceName :: atom (), Probability :: float () } ] }
+%% -----------------------------------------------------------------------------
 growing_group (Group, TC, TAM) ->
     {Coincidences, NewTC} =
 	growing_group (Group#temporal_group.coincidences,
@@ -59,8 +103,6 @@ growing_group (Group, TC, TAM) ->
     
     {Group#temporal_group {coincidences = Coincidences}, NewTC}.
 
-
-%% !FIXME missing doc
 growing_group (Coincidences, TC, _TAM, GroupSize, Accumulator) 
   when (Coincidences == []) or (GroupSize == ?MAX_GROUP_SIZE) ->
     io:format ("1Coincidences: ~p ~n TC: ~p ~n", [Coincidences, TC]),
@@ -86,12 +128,25 @@ growing_group (Coincidences, TC, TAM, GroupSize, Acc) ->
 			   [First|Acc])
     end.
 
+
+%% -----------------------------------------------------------------------------
+%% Func: compute_PCG
+%% @doc Given Coincidence names, their prior probabilities and the Temporal Groups,
+%% computes the PCG matrix.
+%%
+%% Parameters:
+%%   Coincidences :: [ atom () ]
+%%   Priors :: [ { CoincidenceName :: atom (), PriorProbability :: float () } ]
+%%   Groups :: [ #temporal_group ]
+%%
+%% Reply:
+%%   PCG :: [ { { Coincidence :: atom (), Group :: atom ()},
+%%                Probability :: float () } ]
+%% -----------------------------------------------------------------------------
 compute_PCG (Coincidences, Priors, Groups) ->
     PCGTemp = assign_priors (Coincidences, Priors, Groups),
     normalize_PCG (PCGTemp).
 
-
-%% !FIXME missing doc
 assign_priors (Coincidences, Priors, Groups) ->
     assign_priors (Coincidences, Groups, Priors, []).
 
@@ -112,8 +167,18 @@ assign_priors ([Coincidence|Rest], Groups, Priors, Acc) ->
     assign_priors (Rest, Groups, Priors, lists:append (P, Acc)).
     
 				 
-
-%% !FIXMe missing doc
+%% -----------------------------------------------------------------------------
+%% Func: normalize_PCG
+%% @doc Normalize the columns of a PCG matrix.
+%%
+%% Parameters:
+%%   PCG :: [ { { Coincidence :: atom (), Group :: atom ()},
+%%                Probability :: float () } ]
+%%
+%% Reply:
+%%   NormalizedPCG :: [ { { Coincidence :: atom (), Group :: atom ()},
+%%                          Probability :: float () } ]
+%% -----------------------------------------------------------------------------
 normalize_PCG (PCG) ->
     normalize_PCG (PCG, PCG, []).
 
@@ -124,7 +189,18 @@ normalize_PCG ([Entry|Rest], PCG, Acc) ->
     NewValue = Value / Sum,
     normalize_PCG (Rest, PCG, [{{C1, C2}, NewValue} | Acc]).
 
-    
+
+%% -----------------------------------------------------------------------------
+%% Func: sum_over_colum
+%% @doc Given a matrix, returns the sum of the elements of a column.
+%%
+%% Parameters:
+%%   Matrix :: [ { { Row :: atom (), Column :: atom ()},
+%%                   Value :: float () } ]
+%%
+%% Reply:
+%%   Sum :: float ()
+%% -----------------------------------------------------------------------------
 sum_over_column (M, Column) ->
     %% get all items from Row
     R = lists:filter (fun ({{C1, C2}, V}) ->
@@ -137,16 +213,24 @@ sum_over_column (M, Column) ->
     lists:sum (Values).			     
 
 
-
-
-%% !FIXME missing doc
+%% -----------------------------------------------------------------------------
+%% Func: top_most_connected
+%% @doc Given a coincidence, returns the three (or less) coincidences that are
+%% most likely to occur close in time.
+%%
+%% Parameters:
+%%   Coincidence :: atom ()
+%%   TC :: [ { CoincidenceName :: atom (), Probability :: float () } ]
+%%   TAM :: [ { { Coincidence1 :: atom (), Coincidence2 :: atom () },
+%%                Occurrences :: integer () } ]
+%%
+%% Reply:
+%%   TopMostConnectedList :: [Coincidence :: atom ()]
+%% -----------------------------------------------------------------------------
 top_most_connected (Coincidence, TC, TAM) ->
-    io:format ("TAM: ~p ~n", [TAM]),
     Neighbours = [ {{C1, C2}, Value} || {{C1, C2}, Value} <- TAM,
 					C1 == Coincidence,
 					proplists:is_defined (C2, TC) ],
-    
-    io:format ("~p~n", [Neighbours]),
     
     OrderedN = 
 	lists:sort (fun ({_, V1}, {_, V2}) ->
