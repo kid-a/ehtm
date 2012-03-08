@@ -86,6 +86,58 @@ growing_group (Coincidences, TC, TAM, GroupSize, Acc) ->
 			   [First|Acc])
     end.
 
+compute_PCG (Coincidences, Priors, Groups) ->
+    PCGTemp = assign_priors (Coincidences, Priors, Groups),
+    normalize_PCG (PCGTemp).
+
+
+%% !FIXME missing doc
+assign_priors (Coincidences, Priors, Groups) ->
+    assign_priors (Coincidences, Groups, Priors, []).
+
+assign_priors ([], _G, _P, PCG) -> PCG;
+assign_priors ([Coincidence|Rest], Groups, Priors, Acc) -> 
+    Prior = proplists:get_value (Coincidence, Priors),
+    P = lists:foldl (fun (Group, A) ->
+			     GroupCoincidences = Group#temporal_group.coincidences,
+			     GroupName = Group#temporal_group.name,
+			     case lists:member (Coincidence, GroupCoincidences) of
+				 true -> [{{Coincidence, GroupName}, Prior} | A];
+				 _ -> [{{Coincidence, GroupName}, 0} | A]
+			     end
+		     end,
+		     [],
+		     Groups),
+    
+    assign_priors (Rest, Groups, Priors, lists:append (P, Acc)).
+    
+				 
+
+%% !FIXMe missing doc
+normalize_PCG (PCG) ->
+    normalize_PCG (PCG, PCG, []).
+
+normalize_PCG ([], PCG, NewPGC) -> NewPGC;
+normalize_PCG ([Entry|Rest], PCG, Acc) -> 
+    {{C1, C2}, Value} = Entry,
+    Sum = sum_over_column (PCG, C2),
+    NewValue = Value / Sum,
+    normalize_PCG (Rest, PCG, [{{C1, C2}, NewValue} | Acc]).
+
+    
+sum_over_column (M, Column) ->
+    %% get all items from Row
+    R = lists:filter (fun ({{C1, C2}, V}) ->
+			      if C2 == Column -> true;
+				 true -> false
+			      end
+		      end,
+		      M),
+    Values = [ V || {{C1, C2}, V} <- R],
+    lists:sum (Values).			     
+
+
+
 
 %% !FIXME missing doc
 top_most_connected (Coincidence, TC, TAM) ->
@@ -150,5 +202,44 @@ growing_group2_test () ->
     {NewGroup, NewTC} = growing_group (Group, TC, TAM),
     ?assertEqual ([{c10, 0}, {c11,0}], NewTC),
     ?assertEqual ([c1, c3, c2, c4, c5, c6, c7, c8, c9], 
-		  NewGroup#temporal_group.coincidences). 
+		  NewGroup#temporal_group.coincidences).
 
+
+assign_priors_test () ->
+    Coincidences = [c1, c2, c3],
+    Priors = [{c1, 0.6}, {c2, 0.3}, {c3, 0.1}],
+    Groups = [#temporal_group { name = g1,
+				coincidences = [c1, c3]
+			      },
+	      #temporal_group { name = g2,
+				coincidences = [c2]
+			      }],
+    
+    Result = assign_priors (Coincidences, Priors, Groups),
+        
+    ?assertEqual (0.6, proplists:get_value ({c1, g1}, Result)),
+    ?assertEqual (0, proplists:get_value ({c1, g2}, Result)),
+    ?assertEqual (0, proplists:get_value ({c2, g1}, Result)),
+    ?assertEqual (0.3, proplists:get_value ({c2, g2}, Result)),
+    ?assertEqual (0.1, proplists:get_value ({c3, g1}, Result)),
+    ?assertEqual (0, proplists:get_value ({c3, g2}, Result)).
+
+
+normalize_PCG_test () ->
+    Coincidences = [c1, c2, c3],
+    Priors = [{c1, 0.6}, {c2, 0.3}, {c3, 0.1}],
+    Groups = [#temporal_group { name = g1,
+				coincidences = [c1, c3]
+			      },
+	      #temporal_group { name = g2,
+				coincidences = [c2]
+			      }],
+    TempPCG = assign_priors (Coincidences, Priors, Groups),
+    Result = normalize_PCG (TempPCG),
+    
+    ?assertEqual (0.6/0.7, proplists:get_value ({c1, g1}, Result)),
+    ?assertEqual (0.0, proplists:get_value ({c1, g2}, Result)),
+    ?assertEqual (0.0, proplists:get_value ({c2, g1}, Result)),
+    ?assertEqual (1.0, proplists:get_value ({c2, g2}, Result)),
+    ?assertEqual (0.1/0.7, proplists:get_value ({c3, g1}, Result)),
+    ?assertEqual (0.0, proplists:get_value ({c3, g2}, Result)).    
