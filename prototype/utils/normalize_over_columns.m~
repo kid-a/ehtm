@@ -1,6 +1,0 @@
-function M = normalize_over_columns(M)
-  [_, w] = size (M);
-  for i = 1 : w
-    M(:,i) = M (:,i) / sum (M(:,i));
-  endfor
-endfunction

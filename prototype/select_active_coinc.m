@@ -41,19 +41,7 @@ function [K, COINC, SEEN, TAM] = select_active_coinc (LEVEL, COINC, IN_MSG, SEEN
 	  endfor
 	  
       endswitch
-      
-      # for j = 1 : coinc_count
-	
-      # 	switch LEVEL
-      # 	  case "entry"
-      # 	    distaces(j) = norm (COINC (j,:) - IN_MSG);
-      # 	  otherwise
-      # 	    widx = compute_widx (IN_MSG);
-      # 	    distances(j) = widx_distance (COINC (j, :), widx);
-      # 	endswitch
-	
-      # endfor
-      
+            
       [distance,K] = min(distances);
     
       %% compute the threshold as ratio * cardinality of input
@@ -67,7 +55,7 @@ function [K, COINC, SEEN, TAM] = select_active_coinc (LEVEL, COINC, IN_MSG, SEEN
       endswitch
 
       %%printf("Distance is %f.\n", distance);
-      fflush(stdout);
+      %%fflush(stdout);
       %% then, if the closest coincidence is not close enough,
       if (distance > thr)
 	%% make new coinc

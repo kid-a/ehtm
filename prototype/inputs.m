@@ -43,51 +43,5 @@ function in = inputs (W, S = -1)
     j += 1;
   endwhile
 
-endfunction
-  
-  
-  
-  
-  
-	
-  
+endfunction  
 
-
-
-  # result = {};
-  # paths = {"/home/loris/101_ObjectCategories/accordion/",
-  # 	   "/home/loris/101_ObjectCategories/brontosaurus/",
-  # 	   "/home/loris/101_ObjectCategories/airplanes/"};
-  # classes = {"accordion", "brontosaurus", "airplanes"};
-  # %%classes = {"accordion"};
-  # i = {};
-  # for j = 1 : length (classes)
-  #   files = (readdir (paths(j)));
-  #   files = files(3 : length (files));
-  #   %%l = length (files);
-  #   l = 1;
-
-  #   for k = 1 : l
-
-  #     in = imread ([paths{j} files{k}]);
-
-  #     try
-  # 	in = rgb2gray (in);
-  #     catch
-  # 	in = imread ([paths{j} files{k}]);
-  #     end
-      
-  #     [h,w] = size (in);
-  #     if ((h > 300) || (w > 300))
-  # 	break;
-  #     endif
-
-  #     in = pad_input (in);
-      
-  #     len = length (i);
-  #     i{len + 1} = {in, j};
-  #   endfor
-  # endfor
-  
-  # printf ("Loaded %d images from %d classes.\n", length(i), length(classes));
-endfunction

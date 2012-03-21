@@ -1,8 +1,0 @@
-%% -*- mode: octave -*-
-%% math support functions
-function M = normalize_over_rows(M)
-  [h, _] = size (M);
-  for i = 1 : h
-    M(i,:) = M (i,:) / sum (M(i,:));
-  endfor
-endfunction
