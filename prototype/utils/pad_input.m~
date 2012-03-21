@@ -1,0 +1,6 @@
+function i = pad_input (input)
+  [height, width] = size(input);
+  h_add = 300 - height;
+  w_add = 300 - width;
+  i = impad (input, [w_add 0], [h_add 0], "ones");
+endfunction
