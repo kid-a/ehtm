@@ -82,7 +82,7 @@ function NETWORK = do_train(NETWORK, PATTERNS, L=1)
 	      NETWORK{j} = do_inference (NETWORK{j}, "output");
 	      
 	    case entry_ind
-	      NETWORK{j} = do_inference (NETWORK{j}, "entry", 200.0);
+	      NETWORK{j} = do_inference (NETWORK{j}, "entry", 25.0);
 	      NETWORK{j + 1} = do_propagate (NETWORK{j}, NETWORK{j + 1});
 	      
 	    otherwise

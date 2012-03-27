@@ -1,3 +1,4 @@
+%% -*- mode: octave -*-
 function widx = compute_widx (msg)
   widx = [];
 

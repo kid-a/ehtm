@@ -1,8 +1,12 @@
-function test (net)
-  seq = inputs ();
-  l = length(seq);
-  for i = 1 : l
-    printf("Classifying pattern of class: %d.\n", seq{i}{2});
-    classify (net, seq{i}{1})
+%% -*- mode: octave -*p-
+function count = test (network, patterns)
+  count = 0;
+  
+  for i = 1 : length(patterns)
+    [c, network] = classify(network, patterns{i}{1});
+    [m,s] = max(c);
+    if (s == patterns{i}{2})
+      count = count + 1;
+    endif		 
   endfor
 endfunction

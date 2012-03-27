@@ -6,9 +6,7 @@ function LAYER = do_inference(LAYER, LEVEL = "intermediate", SIGMA = 1.0)
 
     case "output"      
       node = LAYER{1,1};
-      
-      node.in_msg
-      
+            
       y = dens_over_coinc (node.coincidences, node.in_msg, LEVEL, SIGMA);
       z = dens_over_classes (y, node.PCW);
       p = class_post_prob (z, node.class_prior_prob);

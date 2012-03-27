@@ -30,10 +30,6 @@ function [K, COINC, SEEN, TAM] = select_active_coinc (LEVEL, COINC, IN_MSG, SEEN
 	case "entry"
 	  distances = sqrt(sum(bsxfun(@minus, COINC, IN_MSG).^2, 2));
 	  %%distances = bsxfun(@minus, COINC, IN_MSG);
-	  %%distances = sqrt(sum(distances.^2,2));
-	  %%distances = norm(bsxfun(@minus, COINC, IN_MSG), OPT="rows")';
-
-	  %%distances = dist(bsxfun(@minus, COINC, IN_MSG));
 
 	otherwise
 	  distances = [];
@@ -47,17 +43,11 @@ function [K, COINC, SEEN, TAM] = select_active_coinc (LEVEL, COINC, IN_MSG, SEEN
             
       [distance,K] = min(distances);
     
-      %% compute the threshold as ratio * cardinality of input
       switch LEVEL
 	case "entry"
-	  %%thr = 0.0;
-	  %%thr = 0.1 * (255 * ones (1, length(IN_MSG)));
-	  %%thr = 55.0;
 	  thr = 225.0;
-	  %%thr = 300;
 	otherwise
 	  thr = 0.0;
-	  %%thr = COINC_THRESHOLD * length (widx);
       endswitch
 
       # printf("Distance is %f.\n", distance);
