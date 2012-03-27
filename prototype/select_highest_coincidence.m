@@ -1,18 +1,16 @@
 %% -*- mode: octave -*-
 %% select_highest_coincidence
 %% in support of the temporal clustering algorithm
-function k = select_highest_coincidence (TC, assigned)
-  %%tic
+function k = select_highest_coincidence (TC, COINCIDENCES)
   [v,o] = sort(TC, "descend");
-  p = 1;
-  while (1)
-    if (spdiag(assigned(o(p))))
-      p++;
-      continue;
-    else
-      k = p;
+  
+  for i = 1 : length(o)
+    mask = abs(COINCIDENCES - o(i));
+    
+    if (!all(mask))
+      [_,p] = sort(mask);
+      k = COINCIDENCES(p(1));
       break;
-    endif
-  endwhile
-  %%toc
+    endif    
+  endfor
 endfunction
