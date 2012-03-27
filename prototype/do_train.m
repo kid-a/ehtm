@@ -1,6 +1,6 @@
 %% -*- mode: octave -*-
 %% do_train(network, training_sequence)
-function NETWORK = do_train(NETWORK, PATTERNS)
+function NETWORK = do_train(NETWORK, PATTERNS, L=1)
   entry_ind  = 1;
   output_ind = length(NETWORK);
 
@@ -34,6 +34,7 @@ function NETWORK = do_train(NETWORK, PATTERNS)
   endfor
 
   %% training
+  tic
   for i = 1 : output_ind
     
     %% find out what is the current level
@@ -69,10 +70,10 @@ function NETWORK = do_train(NETWORK, PATTERNS)
       NETWORK{1} = do_expose (NETWORK{1}, PATTERNS{k}{1});
       
       %% inference and propagation of messages
-      for j = 1 : i
-	if (j == i)
-	  break;
-	endif
+      for j = 1 : (i - 1)
+	# if (j == i)
+	#   break;
+	# endif
 	
 	printf("Doing inference on level %d\n", j);
 	fflush(stdout);
@@ -81,7 +82,7 @@ function NETWORK = do_train(NETWORK, PATTERNS)
 	      NETWORK{j} = do_inference (NETWORK{j}, "output");
 	      
 	    case entry_ind
-	      NETWORK{j} = do_inference (NETWORK{j}, "entry");
+	      NETWORK{j} = do_inference (NETWORK{j}, "entry", 200.0);
 	      NETWORK{j + 1} = do_propagate (NETWORK{j}, NETWORK{j + 1});
 	      
 	    otherwise
@@ -107,7 +108,13 @@ function NETWORK = do_train(NETWORK, PATTERNS)
     %% finalize training
     printf("Finalizing training on %d\n", i);
     fflush(stdout);
-    NETWORK{i} = do_finalize_training (NETWORK{i}, cls, cur_level);
+    switch i
+      case entry_ind
+	NETWORK{i} = do_finalize_training (NETWORK{i}, cls, cur_level, 1);
+      otherwise
+	NETWORK{i} = do_finalize_training (NETWORK{i}, cls, cur_level);
+    endswitch
 
   endfor
+  toc
 endfunction
