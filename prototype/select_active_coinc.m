@@ -22,22 +22,25 @@ function [K, COINC, SEEN, TAM] = select_active_coinc (LEVEL, COINC, IN_MSG, SEEN
       
     %% else, 
     %% search for the closest coincidence    
-    otherwise
-      [coinc_count, _] = size(COINC);
-      
+    otherwise      
       %% make the _distances_ vector, then find the minimum
       [coinc_count, _] = size(COINC);
 
       switch LEVEL
 	case "entry"
-	  distances = norm(bsxfun(@minus, COINC, IN_MSG), OPT="rows")';
+	  distances = sqrt(sum(bsxfun(@minus, COINC, IN_MSG).^2, 2));
+	  %%distances = bsxfun(@minus, COINC, IN_MSG);
+	  %%distances = sqrt(sum(distances.^2,2));
+	  %%distances = norm(bsxfun(@minus, COINC, IN_MSG), OPT="rows")';
+
+	  %%distances = dist(bsxfun(@minus, COINC, IN_MSG));
 
 	otherwise
 	  distances = [];
 
 	  for j = 1 : coinc_count
       	    widx = compute_widx(IN_MSG);
-      	    distances(j) = widx_distance(COINC(j, :), widx);	    
+      	    distances(j) = widx_distance(COINC(j, :), widx);
 	  endfor
 	  
       endswitch
@@ -47,15 +50,18 @@ function [K, COINC, SEEN, TAM] = select_active_coinc (LEVEL, COINC, IN_MSG, SEEN
       %% compute the threshold as ratio * cardinality of input
       switch LEVEL
 	case "entry"
+	  %%thr = 0.0;
 	  %%thr = 0.1 * (255 * ones (1, length(IN_MSG)));
-	  thr = 55.0;
+	  %%thr = 55.0;
+	  thr = 225.0;
+	  %%thr = 300;
 	otherwise
 	  thr = 0.0;
 	  %%thr = COINC_THRESHOLD * length (widx);
       endswitch
 
-      %%printf("Distance is %f.\n", distance);
-      %%fflush(stdout);
+      # printf("Distance is %f.\n", distance);
+      # fflush(stdout);
       %% then, if the closest coincidence is not close enough,
       if (distance > thr)
 	%% make new coinc
