@@ -59,8 +59,8 @@ function NETWORK = do_train(NETWORK, PATTERNS, SIGMA = 25.0, NODE_SHARING = [1 0
     %% for each input pattern
     for j = 1 : length(seq)
       [_,_,k] = size(seq{j}{1});
-      cls = seq{j}{2}; %% get the class
-      temporal_gaps = seq{j}{3}; %% get the indexes of temporal gaps
+      temporal_gaps = seq{j}{2}; %% get the indexes of temporal gaps
+      cls = seq{j}{3}; %% get the class
       
       for l = 1 : k
 	if (i != entry_ind)
@@ -100,6 +100,7 @@ function NETWORK = do_train(NETWORK, PATTERNS, SIGMA = 25.0, NODE_SHARING = [1 0
   endfor
   toc
   
+  printf("\n\n");
   printf("*** Summary ***\n");
   printf("Number of patterns: %d\n", length(PATTERNS));
   printf("Size of training sequences:\n");
@@ -108,6 +109,7 @@ function NETWORK = do_train(NETWORK, PATTERNS, SIGMA = 25.0, NODE_SHARING = [1 0
   printf("Q3: %d\n", count(3));
   fflush(stdout);
 
+  printf("\n");
   printf("Cardinality of coincidences and temporal groups:\n");
   for i = 1 : length(NETWORK)
 
@@ -115,9 +117,12 @@ function NETWORK = do_train(NETWORK, PATTERNS, SIGMA = 25.0, NODE_SHARING = [1 0
     [h, w] = size(NETWORK{i});
     coinc_count = 0;
     temp_groups_count = 0;
+
+    k = 0;
     
     for j = 1 : h
       for l = 1 : w
+	k += 1;
 	coinc_count += length(NETWORK{i}{j,l}.coincidences);
 	if (i != output_ind)
 	  temp_groups_count += length(NETWORK{i}{j,l}.temporal_groups);
@@ -126,9 +131,9 @@ function NETWORK = do_train(NETWORK, PATTERNS, SIGMA = 25.0, NODE_SHARING = [1 0
     endfor
 
     if (i != output_ind)
-      printf("%d, %d\n", coinc_count, temp_groups_count);
+      printf("%f, %f\n", coinc_count/k, temp_groups_count/k);
     else
-      printf("%d\n", coinc_count);
+      printf("%f\n", coinc_count/k);
     endif
     fflush(stdout);
   endfor
