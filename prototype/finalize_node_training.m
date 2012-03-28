@@ -18,6 +18,13 @@ function NODE = finalize_node_training (NODE, CLASS, LEVEL)
 	
 
       otherwise %% entry or intermediate
+	switch LEVEL
+	  case "entry"
+	    max_group_size = 10;
+	  case "intermediate"
+	    max_group_size = 12;
+	endswitch
+
 
 	%% compute coincidence priors
 	total_seen = sum (NODE.seen);
@@ -33,7 +40,7 @@ function NODE = finalize_node_training (NODE, CLASS, LEVEL)
 	TC = c_priors * TAM;
 	
 	%%temporal groups learning
-	NODE.temporal_groups = do_temporal_clustering (TC, TAM);
+	NODE.temporal_groups = do_temporal_clustering (TC, TAM, max_group_size);
 	
 	%% PCG matrix computation
 	NODE.PCG = do_compute_PCG (c_priors, NODE.temporal_groups);
