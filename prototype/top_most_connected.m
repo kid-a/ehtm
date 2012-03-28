@@ -10,7 +10,7 @@ function [most_connected, COINCIDENCES] = top_most_connected (k, COINCIDENCES, T
 
   p = 1;
   
-  while ((length(most_connected) < 5) && (p <= length(o)))
+  while ((length(most_connected) < 3) && (p <= length(o)))
     index = COINCIDENCES(o(p));
     most_connected = [most_connected index];
     p += 1;

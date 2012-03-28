@@ -3,11 +3,9 @@
 function G = do_temporal_clustering (TC, TAM, MAX_GROUP_SIZE = 10)
   G = {};
   coincidences = 1 : length(TC);
-  # assigned = zeros (1, length (TC));
 
   printf("Clustering %d coincidences...\n", length(TC));
   
-  %%while ( ! all ( assigned ) )
   while (length(coincidences) > 0)
     length(coincidences)
     fflush(stdout);
@@ -32,7 +30,6 @@ function G = do_temporal_clustering (TC, TAM, MAX_GROUP_SIZE = 10)
     
     for j = Omega
       g = insert_into_set (g, j);
-      assigned (j) = 1;
     endfor
     
     G (length (G) + 1) = g;

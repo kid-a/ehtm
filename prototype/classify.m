@@ -1,7 +1,7 @@
 %% -*- mode: octave -*-
-function [out, network] = classify (network, in)
+function [out, network] = classify (network, in, SIGMA = 25.0)
   network{1} = do_expose (network{1}, in);
-  network{1} = do_inference (network{1}, "entry", 25.0);
+  network{1} = do_inference (network{1}, "entry", SIGMA);
   network{2} = do_propagate (network{1}, network{2});
   network{2} = do_inference (network{2}, "intermediate");
   network{3} = do_propagate (network{2}, network{3});

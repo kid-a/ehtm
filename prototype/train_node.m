@@ -19,14 +19,17 @@ function NODE = train_node (NODE, CLASS, TEMPORAL_GAP, LEVEL)
   fflush(stdout);
   %% increment the temporal activation matrix cell
   %% for k_prev, k
-  if (NODE.k_prev == 0) %% if first pattern
-    NODE.k_prev = [];
-  else
-    for t = 1 : length(NODE.k_prev)
-      NODE.TAM(NODE.k_prev(t), k) = NODE.TAM(NODE.k_prev(t), k) + 1 + transition_memory - t;
-    endfor
+  
+  if (!TEMPORAL_GAP)
+    if (NODE.k_prev == 0) %% if first pattern
+      NODE.k_prev = [];
+    else
+      for t = 1 : length(NODE.k_prev)
+	NODE.TAM(NODE.k_prev(t), k) = NODE.TAM(NODE.k_prev(t), k) + 1 + transition_memory - t;
+      endfor
+    endif
   endif
-
+  
   
   NODE.k_prev = [NODE.k_prev k];
   while (length(NODE.k_prev) > transition_memory)
