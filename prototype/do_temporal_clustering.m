@@ -14,7 +14,7 @@ function G = do_temporal_clustering (TC, TAM, MAX_GROUP_SIZE = 10)
     Omega = [k];
     pos = 1;
     
-    while ((pos <= length (Omega)) && (length (Omega) < MAX_GROUP_SIZE)) %% max_group_size
+    while ((pos <= length (Omega)) && (pos < MAX_GROUP_SIZE))
       k = Omega (pos);
       [most_connected, coincidences] = top_most_connected (k, coincidences, sparse(TAM));
       

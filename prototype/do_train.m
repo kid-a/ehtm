@@ -86,7 +86,13 @@ function NETWORK = do_train(NETWORK, PATTERNS, SIGMA = 25.0, NODE_SHARING = [1 0
 	
 	%% determine if the current pattern is the first after
 	%% a temporal gap
-	temporal_gap = !all((temporal_gaps - i));
+	temporal_gap = !all((temporal_gaps - l));
+	if (temporal_gap)
+	  printf("Temporal gap detected.\n");
+	endif
+
+	fflush(stdout);
+
 	NETWORK{i} = do_train_layer(NETWORK{i}, cur_level, 
 				    seq{j}{1}(:,:,l), cls, temporal_gap, 
 				    NODE_SHARING(i));
