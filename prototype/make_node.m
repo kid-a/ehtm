@@ -6,10 +6,9 @@ function NODE = make_node (T)
     case "output"
       NODE.in_msg = [];
       NODE.coincidences = [];
-      NODE.seen = [];
       NODE.TAM = [];
+      NODE.seen = [];
       NODE.k_prev = 0;
-      NODE.cls_priors = [];
       NODE.PCW = [];
       NODE.class_prior_prob = [];
       NODE.out_msg = [];

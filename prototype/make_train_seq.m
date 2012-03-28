@@ -12,7 +12,7 @@ function sequence = make_train_seq (I, LEVEL, S = "nil")
       %% now, pad the image
       window_h = S(1);
       window_w = S(2);
-      I = impad(I, [window_w window_w], [(window_h - 1) (window_h -1)], "constant", 255);
+      I = impad(I, [window_w window_w], [(window_h - 1) (window_h - 1)], "constant", 255);
       
       %% ready to perform the scans
       [image_h, image_w] = size(I);

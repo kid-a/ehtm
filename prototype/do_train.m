@@ -1,120 +1,136 @@
 %% -*- mode: octave -*-
 %% do_train(network, training_sequence)
-function NETWORK = do_train(NETWORK, PATTERNS, L=1)
+function NETWORK = do_train(NETWORK, PATTERNS, SIGMA = 25.0, NODE_SHARING = [1 0 0])
   entry_ind  = 1;
   output_ind = length(NETWORK);
 
-  %% reset nodes
-  for i = 1 : output_ind
-    [layer_h, layer_w] = size(NETWORK{i});
+  %% reset the network
+  NETWORK = reset (NETWORK);
+
+  %% make the training sequences
+  sequences = {};
+  count = [0 0 0];
+  
+  for i = 1 : length(PATTERNS)
+    s = make_train_seq(PATTERNS{i}{1}, "entry", [4 4]);
+    s{3} = PATTERNS{i}{2}; %%copy the class
+    sequences{1}{i} = s;
+    [_,_,l] = size(s{1});
+    count(1) += l;
     
-    for j = 1 : layer_h
-      for k = 1 : layer_w
-	if (i == output_ind)
-	  (NETWORK{i}){j, k}.in_msg = [];
-	  (NETWORK{i}){j, k}.coincidences = [];
-	  (NETWORK{i}){j, k}.TAM = [];
-	  (NETWORK{i}){j, k}.seen = [];
-	  (NETWORK{i}){j, k}.k_prev = 0;
-	  (NETWORK{i}){j, k}.PCG = [];
-	  (NETWORK{i}){j, k}.PCW = [];
-	  (NETWORK{i}){j, k}.out_msg = [];
-	else
-	  (NETWORK{i}){j, k}.in_msg = [];
-	  (NETWORK{i}){j, k}.coincidences = [];
-	  (NETWORK{i}){j, k}.TAM = [];
-	  (NETWORK{i}){j, k}.seen = [];
-	  (NETWORK{i}){j, k}.k_prev = 0;
-	  (NETWORK{i}){j, k}.PCG = [];
-	  (NETWORK{i}){j, k}.temporal_groups = [];
-	  (NETWORK{i}){j, k}.out_msg = [];
-	endif
-      endfor
-    endfor
+    s = make_train_seq(PATTERNS{i}{1}, "intermediate");
+    s{3} = PATTERNS{i}{2}; %%copy the class
+    sequences{2}{i} = s;
+    [_,_,l] = size(s{1});
+    count(2) += l;
+    
+    s = make_train_seq(PATTERNS{i}{1}, "output");
+    s{3} = PATTERNS{i}{2}; %%copy the class
+    sequences{3}{i} = s;
+    [_,_,l] = size(s{1});
+    count(3) += l;
   endfor
 
-  %% training
+  %% training routine
   tic
+  
+  %% for each level
   for i = 1 : output_ind
     
-    %% find out what is the current level
-    switch (i)
-      case output_ind
-	cur_level = "output";
-      case entry_ind
-	cur_level = "entry";
-      otherwise
-	cur_level = "intermediate";
-    endswitch
-
-    printf("\n\n");
-    printf("Training layer %d\n", i);
+    %% do actual training
+    printf("Training level %d\n", i);
     fflush(stdout);
-    cls = PATTERNS{1}{2};
-    
-    for k = 1 : length (PATTERNS)
-      %% from now on,
-      %% PATTERNS{k}{1} is the bitmap
-      %% PATTERNS{k}{2} is the class
 
-      %% check whether the current one is a temporal gap
-      temporal_gap = 0;
-      
-      new_cls = PATTERNS{k}{2};
-      if (new_cls != cls)
-	temporal_gap = 1
-      endif
-      
-      cls = new_cls;
-      
-      NETWORK{1} = do_expose (NETWORK{1}, PATTERNS{k}{1});
-      
-      %% inference and propagation of messages
-      for j = 1 : (i - 1)
-	# if (j == i)
-	#   break;
-	# endif
-	
-	printf("Doing inference on level %d\n", j);
-	fflush(stdout);
-	switch (j)
-	    case output_ind
-	      NETWORK{j} = do_inference (NETWORK{j}, "output");
-	      
-	    case entry_ind
-	      NETWORK{j} = do_inference (NETWORK{j}, "entry", 25.0);
-	      NETWORK{j + 1} = do_propagate (NETWORK{j}, NETWORK{j + 1});
-	      
-	    otherwise
-	      NETWORK{j} = do_inference (NETWORK{j}, "intermediate");
-	      NETWORK{j + 1} = do_propagate (NETWORK{j}, NETWORK{j + 1});
-	  endswitch
-	  
-      endfor
-      
-      %% actual training
-      printf("Training level %d\n", i);
-      fflush(stdout);
-      switch i
-	case entry_ind
-	  training_seq = make_train_seq (PATTERNS{k}{1}, [4 4]);
-	  NETWORK{i} = do_train_layer (NETWORK{i}, cls, cur_level, temporal_gap, 1, training_seq);
-	  
-	otherwise
-	  NETWORK{i} = do_train_layer (NETWORK{i}, cls, cur_level, temporal_gap);
-      endswitch  
-    endfor
-
-    %% finalize training
-    printf("Finalizing training on %d\n", i);
-    fflush(stdout);
+    %% determine current layer
     switch i
       case entry_ind
-	NETWORK{i} = do_finalize_training (NETWORK{i}, cls, cur_level, 1);
+	cur_level = "entry";
+	seq_index = 1;
+      case output_ind 
+	cur_level = "output";
+	seq_index = 2;
       otherwise
-	NETWORK{i} = do_finalize_training (NETWORK{i}, cls, cur_level);
+	cur_level = "intermediate";
+	seq_index = 3;
     endswitch
+    
+    seq = sequences{seq_index};
+    
+    %% for each input pattern
+    for j = 1 : length(seq)
+      [_,_,k] = size(seq{j}{1});
+      cls = seq{j}{2}; %% get the class
+      temporal_gaps = seq{j}{3}; %% get the indexes of temporal gaps
+      
+      for l = 1 : k
+	if (i != entry_ind)
+	  NETWORK{1} = do_expose (NETWORK{1}, seq{j}{1}(:,:,l));
+	endif
+
+	%% do inference on input
+	%% (it is not executed when training layer 1)
+	for m = 1 : (i - 1)
+	  switch m  
+	    case output_ind
+	      NETWORK{m} = do_inference (NETWORK{m}, "output");
+	    
+	    case entry_ind
+	      NETWORK{m} = do_inference (NETWORK{m}, "entry", SIGMA);
+ 	      NETWORK{m + 1} = do_propagate (NETWORK{m}, NETWORK{m + 1});
+	      
+	    otherwise
+ 	      NETWORK{m} = do_inference (NETWORK{m}, "intermediate");
+ 	      NETWORK{m + 1} = do_propagate (NETWORK{m}, NETWORK{m + 1});
+ 	  endswitch
+	endfor
+	
+	%% determine if the current pattern is the first after
+	%% a temporal gap
+	temporal_gap = !all((temporal_gaps - i));
+	NETWORK{i} = do_train_layer(NETWORK{i}, cur_level, 
+				    seq{j}{1}(:,:,l), cls, temporal_gap, 
+				    NODE_SHARING(i));
+	
+      endfor
+    endfor
+
+    NETWORK{i} = do_finalize_training(NETWORK{i}, cur_level, 
+				      cls, NODE_SHARING(i));
 
   endfor
   toc
+  
+  printf("*** Summary ***\n");
+  printf("Number of patterns: %d\n", length(PATTERNS));
+  printf("Size of training sequences:\n");
+  printf("Q1: %d\n", count(1));
+  printf("Q2: %d\n", count(2));
+  printf("Q3: %d\n", count(3));
+  fflush(stdout);
+
+  printf("Cardinality of coincidences and temporal groups:\n");
+  for i = 1 : length(NETWORK)
+
+    printf("Layer %d:", i);
+    [h, w] = size(NETWORK{i});
+    coinc_count = 0;
+    temp_groups_count = 0;
+    
+    for j = 1 : h
+      for l = 1 : w
+	coinc_count += length(NETWORK{i}{j,l}.coincidences);
+	if (i != output_ind)
+	  temp_groups_count += length(NETWORK{i}{j,l}.temporal_groups);
+	endif
+      endfor
+    endfor
+
+    if (i != output_ind)
+      printf("%d, %d\n", coinc_count, temp_groups_count);
+    else
+      printf("%d\n", coinc_count);
+    endif
+    fflush(stdout);
+  endfor
+
 endfunction

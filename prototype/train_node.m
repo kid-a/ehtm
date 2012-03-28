@@ -15,8 +15,8 @@ function NODE = train_node (NODE, CLASS, TEMPORAL_GAP, LEVEL)
   [k, NODE.coincidences, NODE.seen, NODE.TAM] = \
       select_active_coinc (LEVEL, NODE.coincidences, NODE.in_msg, NODE.seen, NODE.TAM);
     
-  # printf("Node has %d coincidences\n", length(NODE.coincidences));
-  # fflush(stdout);
+  printf("Node has %d coincidences\n", length(NODE.coincidences));
+  fflush(stdout);
   %% increment the temporal activation matrix cell
   %% for k_prev, k
   if (NODE.k_prev == 0) %% if first pattern

@@ -26,7 +26,6 @@ function images = read_usps_maltoni (W)
 	  k += 1;
 	endfor
       endfor
-
       
   endswitch
 
