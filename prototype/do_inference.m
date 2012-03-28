@@ -7,7 +7,7 @@ function LAYER = do_inference(LAYER, LEVEL = "intermediate", SIGMA = 1.0)
     case "output"      
       node = LAYER{1,1};
             
-      y = dens_over_coinc (node.coincidences, node.in_msg, LEVEL, SIGMA);
+      y = normalize_over_rows(dens_over_coinc (node.coincidences, node.in_msg, LEVEL, SIGMA));
       z = dens_over_classes (y, node.PCW);
       p = class_post_prob (z, node.class_prior_prob);
       
@@ -19,7 +19,7 @@ function LAYER = do_inference(LAYER, LEVEL = "intermediate", SIGMA = 1.0)
 	for j = 1 : layer_width  
   	  node = LAYER{i,j};
 	  
-  	  y = dens_over_coinc (node.coincidences, node.in_msg, LEVEL, SIGMA);
+  	  y = normalize_over_rows(dens_over_coinc (node.coincidences, node.in_msg, LEVEL, SIGMA));
   	  z = dens_over_groups (y, node.PCG);
 	  
 	  LAYER{i,j}.out_msg = z;

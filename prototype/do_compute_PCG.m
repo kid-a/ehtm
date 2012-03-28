@@ -12,6 +12,6 @@ function PCG = do_compute_PCG (coinc_priors, temporal_groups)
   endfor
 
   %% normalize
-  PCG = sparse(normalize_over_columns (PCG));
+  PCG = normalize_over_columns (PCG);
   %%PCG = normalize_over_columns (PCG);
 endfunction
