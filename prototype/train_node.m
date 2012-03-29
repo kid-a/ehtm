@@ -26,20 +26,26 @@ function NODE = train_node (NODE, CLASS, TEMPORAL_GAP, LEVEL)
     else
       l = 1 : transition_memory;
       l = fliplr(l);
-      for t = l
+      for t = 1 : length(NODE.k_prev)
     	try
-    	  NODE.TAM(NODE.k_prev(t), k) = NODE.TAM(NODE.k_prev(t), k) + 1 + transition_memory - t;
+    	  NODE.TAM(NODE.k_prev(t), k) = NODE.TAM(NODE.k_prev(t), k) + 1 + transition_memory - l(t);
     	catch
     	end_try_catch
       endfor
     endif
+
+    NODE.k_prev = [NODE.k_prev k];
+    while (length(NODE.k_prev) > transition_memory)
+      NODE.k_prev = NODE.k_prev(2:length(NODE.k_prev));
+    endwhile
+
+  else
+    NODE.k_prev = [k];
+
   endif
   
   
-  NODE.k_prev = [NODE.k_prev k];
-  while (length(NODE.k_prev) > transition_memory)
-    NODE.k_prev = NODE.k_prev(2:length(NODE.k_prev));
-  endwhile
+
   
   if (strcmp(LEVEL, "output"))
 
