@@ -12,22 +12,24 @@ function sequence = make_train_seq (I, LEVEL, S = "nil")
       %% now, pad the image
       window_h = S(1);
       window_w = S(2);
+
       I = impad(I, [window_w window_w], [(window_h - 1) (window_h - 1)], "constant", 255);
+      %%I = impad(I, [window_w window_w], [window_h window_h], "constant", 255);
       
       %% ready to perform the scans
       [image_h, image_w] = size(I);
       
       l = fliplr(1:(image_w - window_w + 1));
-      %%reversed = sort(1:(image_w - window_w + 1), "descend");
       
       k = 1;
       for i = 1 : (image_h - window_h + 1)
 	for j = l
-	  sequence{1}(:,:,k) = I(i:i+window_h - 1, j:j+window_w - 1);
+	  sequence{1}(:,:,k) = I(i:(i+window_h - 1), j:(j+window_w - 1));
 	  k += 1;
 	endfor
 	l = fliplr(l);
       endfor
+
       
     otherwise %% LEVEL == "output" or "intermediate"	
       %% crop the foreground object, then put it in the lower-sx part of the image

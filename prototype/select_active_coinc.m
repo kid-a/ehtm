@@ -45,6 +45,7 @@ function [K, COINC, SEEN, TAM] = select_active_coinc (LEVEL, COINC, IN_MSG, SEEN
     
       switch LEVEL
 	case "entry"
+	  %%thr = 400;
 	  thr = 225.0;
 	  %%thr = 55;
 	otherwise

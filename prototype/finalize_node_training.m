@@ -14,15 +14,16 @@ function NODE = finalize_node_training (NODE, CLASS, LEVEL)
 	endif
     
 	%% normalize the PCW
-	NODE.PCW = normalize_over_columns (NODE.PCW);
-	
+	NODE.PCW = normalize_over_columns (NODE.PCW);	
 
       otherwise %% entry or intermediate
 	switch LEVEL
 	  case "entry"
 	    max_group_size = 10;
+	    min_group_size = 4;
 	  case "intermediate"
 	    max_group_size = 12;
+	    min_group_size = 2;
 	endswitch
 
 
@@ -40,7 +41,7 @@ function NODE = finalize_node_training (NODE, CLASS, LEVEL)
 	TC = c_priors * TAM;
 	
 	%%temporal groups learning
-	NODE.temporal_groups = do_temporal_clustering (TC, TAM, max_group_size);
+	NODE.temporal_groups = do_temporal_clustering (TC, TAM, max_group_size, min_group_size);
 	
 	%% PCG matrix computation
 	NODE.PCG = do_compute_PCG (c_priors, NODE.temporal_groups);

@@ -69,7 +69,11 @@ function NETWORK = do_train(NETWORK, PATTERNS, SIGMA = 25.0, NODE_SHARING = [1 0
 
 	%% do inference on input
 	%% (it is not executed when training layer 1)
-	for m = 1 : (i - 1)
+	for m = 1 : i
+	  if (m == i)
+	    continue;
+	  endif
+	  
 	  switch m  
 	    case output_ind
 	      NETWORK{m} = do_inference (NETWORK{m}, "output");
