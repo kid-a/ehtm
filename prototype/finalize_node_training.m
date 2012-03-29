@@ -34,7 +34,8 @@ function NODE = finalize_node_training (NODE, CLASS, LEVEL)
 	TAM = make_symmetric (NODE.TAM);
 	
 	%% normalize TAM
-	TAM = normalize_over_rows (TAM);
+	%%TAM = normalize_over_rows (TAM);
+	TAM = normalize_over_columns (TAM);
 	
 	%% compute temporal connections
 	TC = c_priors * TAM;
