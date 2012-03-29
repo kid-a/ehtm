@@ -8,27 +8,51 @@ function sequence = make_train_seq (I, LEVEL, S = "nil")
     case "entry"	
       I(:,!any(double(I) - 255)) = [];
       I(!any(double(I) - 255, 2),:) = [];
+
+      Ib = I;
       
       %% now, pad the image
       window_h = S(1);
       window_w = S(2);
 
-      I = impad(I, [window_w window_w], [(window_h - 1) (window_h - 1)], "constant", 255);
-      %%I = impad(I, [window_w window_w], [window_h window_h], "constant", 255);
+      I = impad(I, [(window_w - 1) (window_w - 1)], [(window_h - 1) (window_h - 1)], 
+		"constant", 255);
       
-      %% ready to perform the scans
+      %% perform the horizontal scan
       [image_h, image_w] = size(I);
       
       l = fliplr(1:(image_w - window_w + 1));
       
       k = 1;
       for i = 1 : (image_h - window_h + 1)
+      	for j = l
+      	  sequence{1}(:,:,k) = I(i:(i+window_h - 1), j:(j+window_w - 1));
+      	  k += 1;
+      	endfor
+      	l = fliplr(l);
+      endfor
+
+      %% restore the cropped image
+      I = Ib;
+      k += 1;
+      sequence{2} = [sequence{2} k];
+
+      I = impad(I, [(window_w - 1) (window_w - 1)], [(window_h - 1) (window_h - 1)], 
+		"constant", 255);
+
+      %%perform the vertical scan
+      [image_h, image_w] = size(I);
+
+      l = 1 : (image_h - window_h + 1);
+      
+      for i = 1 : (image_w - window_w + 1)
 	for j = l
-	  sequence{1}(:,:,k) = I(i:(i+window_h - 1), j:(j+window_w - 1));
+	  sequence{1}(:,:,k) = I(j:(j+window_h - 1), i:(i+window_w - 1));
 	  k += 1;
 	endfor
 	l = fliplr(l);
       endfor
+      
 
       
     otherwise %% LEVEL == "output" or "intermediate"	
@@ -37,7 +61,7 @@ function sequence = make_train_seq (I, LEVEL, S = "nil")
       I(:,!any(double(I) - 255)) = [];
       I(!any(double(I) - 255, 2),:) = [];
       [crop_image_h, crop_image_w] = size(I);
-      I = impad(I, [(image_w - crop_image_w) 0], 
+      I = impad(I, [(image_w - crop_image_w) 0],
 		[image_h - crop_image_h 0], "constant", 255);
       Ib = I;
       
