@@ -13,15 +13,15 @@ function LAYER = do_expose (LAYER, INPUT)
     for j = 1 : layer_width
       node = LAYER{i,j};
       patch = INPUT (starting_point_h : starting_point_h + patch_height - 1, 
-		     starting_point_w : starting_point_w + patch_width - 1);
+		     starting_point_w : starting_point_w + patch_width - 1)
       
       node.in_msg = double (vec(patch)');
       LAYER{i,j} = node;
 
-      starting_point_w = j * patch_width;
+      starting_point_w = (j * patch_width) + 1;
     endfor
     starting_point_w = 1;
-    starting_point_h = i * patch_height;
+    starting_point_h = (i * patch_height) + 1;
   endfor
   
 endfunction
