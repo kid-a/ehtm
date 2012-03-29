@@ -70,14 +70,14 @@ sample_input = ones(50,50);
 
 %%
 %%  expose
-%%
-disp("Testing expose on entry node... \n");
-entry_layer = do_expose(entry_layer, sample_input);
-for i = 1 : 10
-  for j = 1 : 10
-    prod(entry_layer{i,j}.in_msg == ones(1, 25))
-  endfor
-endfor
+%%  !FIXME makes no sense with a matrix of ones
+# disp("Testing expose on entry node... \n");
+# entry_layer = do_expose(entry_layer, sample_input);
+# for i = 1 : 10
+#   for j = 1 : 10
+#     prod(entry_layer{i,j}.in_msg == ones(1, 25))
+#   endfor
+# endfor
 
 
 %%
