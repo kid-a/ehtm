@@ -1,6 +1,6 @@
 %% -*- mode: octave -*-
 %% returns the top_most_connected, unassigned coincidences
-function [most_connected, COINCIDENCES] = top_most_connected (k, COINCIDENCES, TAM)
+function most_connected = top_most_connected (k, COINCIDENCES, ASSIGNED, TAM)
   most_connected = [];
 
   %% remove coincidence k
@@ -10,33 +10,13 @@ function [most_connected, COINCIDENCES] = top_most_connected (k, COINCIDENCES, T
 
   p = 1;
   
-  while ((length(most_connected) < 3) && (p <= length(o)))
+  # while ((length(most_connected) < 3) && (p <= length(o)))
+  while ((p <= 3) && (p <= length(o)))
     index = COINCIDENCES(o(p));
-    most_connected = [most_connected index];
+    
+    if (!ASSIGNED(index))
+      most_connected = [most_connected index];
+    endif
     p += 1;
   endwhile
-
-  for i = most_connected
-    COINCIDENCES = COINCIDENCES(COINCIDENCES != i);
-  endfor
-
-
-
-  
-
-
-
-  # [v,o] = sort(TAM(k,:));
-  
-  # p = 1;
-  
-  # while ((length(most_connected) < 5) && (p < length(o)))
-  #   index = o(p);
-  #   if (!assigned(index) && !(k == index))
-  #     most_connected = [most_connected index];
-  #   endif
-    
-  #   p += 1;
-  # endwhile
-  
 endfunction
